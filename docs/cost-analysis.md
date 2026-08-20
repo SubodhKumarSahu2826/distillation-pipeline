@@ -7,11 +7,37 @@ in docs.
 
 ---
 
-## 1. Generation cost (Phase 2) — the main cash outlay
+## 1. Generation cost — pilot estimate (Phase 1) → full run (Phase 2)
+
+### 1a. Pilot cost estimate (Phase 1) — estimate only, **nothing spent yet**
+
+The pilot is the money gate: run ~50 receipts through the teacher, score against independent gold,
+then decide the bulk tier. The numbers below are **labelled assumptions** (D-009), not measurements.
+
+| Knob | Value (assumption) |
+|------|:--|
+| Pilot size | 50 receipts (`--limit 50`; may raise to 100) |
+| Mean input tokens / request | ~700 (chars÷4 heuristic; **replace with free `count_tokens` on real inputs before spend**) |
+| Assumed output tokens / request | ~300 (compact `receipt-v1` JSON) |
+| Ceiling model | `claude-opus-5` — $5 in / $25 out per Mtok (list price; confirm on endpoint) |
+| Cost-tier model | `claude-haiku-4-5` — cheaper; **confirm price on the agentrouter endpoint** before estimating |
+
+Formula (as printed by `scripts/run_teacher.py`, which is dry-run by default):
+`cost = N · (mean_in · price_in + mean_out · price_out) / 1e6`
+
+- **Opus 5, 50 samples:** 50 · (700·5 + 300·25) / 1e6 = **~$0.55**  (100 samples ≈ **$1.10**).
+- **Haiku 4.5, 50 samples:** far lower; exact figure pending confirmed Haiku pricing on the endpoint.
+
+Method before any paid call (guardrails, CLAUDE.md §3): (1) acquire the receipts dataset;
+(2) run the free `count_tokens` on the real pilot inputs and replace the ~700 estimate;
+(3) confirm endpoint pricing; (4) re-run the dry-run to print the real projected cost;
+(5) present it for **explicit approval**; (6) only then `--confirm`.
+
+### 1b. Full-run generation cost (Phase 2) — the main cash outlay
 
 | Item | Value |
 |------|:-----:|
-| Pilot size / cost | _TBD_ (50–100 calls) |
+| Pilot size / cost | _TBD_ (measured in the Phase-1 pilot) |
 | Estimated full-run cost (from pilot) | _TBD_ |
 | **Actual full-run cost** | _TBD_ |
 | Examples kept after filtering | _TBD_ |

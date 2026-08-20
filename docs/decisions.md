@@ -5,6 +5,56 @@ context → decision → why → consequence. Reference by ID (D-00N) from other
 
 ---
 
+### D-009 — Teacher pricing is a labelled assumption pending endpoint confirmation
+- **Context:** `ANTHROPIC_BASE_URL=https://agentrouter.org/` is a third-party router; real
+  per-token pricing there may differ from Anthropic list prices.
+- **Decision:** seed `config.py` with **Opus 5 list prices** ($5 in / $25 out per Mtok) as an
+  explicit, labelled assumption for cost estimation; before any paid/bulk run, confirm actual
+  endpoint pricing **and** run the free `count_tokens` on real inputs to replace the ~4-char/token
+  estimate. All prices overridable via env (`TEACHER_INPUT/OUTPUT_USD_PER_MTOK`).
+- **Why:** honest cost estimates must not silently hardcode possibly-wrong prices; the money
+  guardrails require a real estimate before spend.
+- **Consequence:** the dry-run cost plan is labelled an estimate; Phase 6 replaces it with measured
+  numbers. (Phase 1, 2026-08-21)
+
+### D-008 — Pydantic promoted to a required runtime dependency
+- **Context:** D-004 declared zero required runtime deps for Phase 0. Phase 1's `schema.py` is the
+  pipeline-wide output contract, imported by `evaluate`/`teacher`/(later) `router`.
+- **Decision:** move `pydantic>=2` from an optional extra into core `dependencies`; drop the
+  now-empty `data` extra. `anthropic` stays in the `teacher` extra (lazy-imported).
+- **Why:** the schema is core to every phase; keeping it optional would break imports everywhere.
+- **Consequence:** `pip install -e .` now installs pydantic; tests still run fully offline
+  (`anthropic` imported lazily only on a paid call). Updates D-004's "zero runtime deps."
+  (Phase 1, 2026-08-21)
+
+### D-007 — Teacher tiers: Opus 5 ceiling + Haiku 4.5 cost-tier pilot
+- **Context:** Phase 1 measures the teacher *ceiling*; Phase 2 must pick the *cheapest* teacher
+  that still clears the quality bar for bulk labelling. `task-selection.md` left the bulk tier open.
+- **Decision:** measure the ceiling with **claude-opus-5** (config default); in the same pilot,
+  also run **claude-haiku-4-5** on the same inputs to see whether a cheaper tier retains enough
+  field-F1 to be the bulk-generation teacher. The bulk tier is chosen from pilot numbers, not
+  assumed.
+- **Why:** separates "best achievable quality" (the honest retention denominator) from "cheapest
+  acceptable generator" (drives generation cost + break-even).
+- **Consequence:** the pilot runs two small batches; E-001 records both. Bulk tier locked in
+  Phase 2 from the A/B. (Phase 1, 2026-08-21)
+
+### D-006 — Document type & dataset for extraction (pilot target, not yet locked)
+- **Context:** the task is structured extraction (D-001); we need one concrete document type and a
+  corpus with independent gold parses to measure a teacher ceiling and later train the student.
+- **Decision:** target **receipts** (short, semi-structured) as the pilot document type; primary
+  dataset candidate **CORD** (receipt parsing — line items + OCR text layer + ground-truth JSON,
+  permissive license), fallback **SROIE**. Final confirmation is **gated on the Phase-1 pilot**:
+  lock it only once the teacher clears the field-F1 bar on real inputs and the dataset's gold maps
+  cleanly onto `schema.py` (`receipt-v1`).
+- **Why:** receipts have strong format regularity, real public corpora with ground-truth, and fit
+  an 8B student; keeps eval deterministic against *independent* gold (not teacher self-labels).
+- **Consequence:** schema is `receipt-v1` (no `invoice_no`; line items carry description / quantity
+  / unit_price / total_price). Dataset acquisition + gold verification is the next action. **The
+  sandbox network is limited to `agentrouter.org` + `api.anthropic.com`, so the dataset cannot be
+  downloaded in-sandbox** — acquisition is a user-run step or needs a network allowance.
+  (Phase 1, 2026-08-21)
+
 ### D-005 — Sandbox blocks `.git` writes in the workspace
 - **Context:** Phase 0 must `git init` + commit here (D-002), but the execution sandbox denies
   creating a `.git` directory anywhere in the workspace tree (normal dirs, and `.git` under

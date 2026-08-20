@@ -8,8 +8,10 @@ project: it fixes the dataset, the evaluation metric, and the router's escalatio
 ## Decision
 
 **Distill: structured extraction from one document type into a fixed JSON schema.**
-Concrete instantiation (locked with a pilot in Phase 1): extract a fixed set of fields from a
-short semi-structured business document (e.g. **receipts/invoices**) into the schema in §4.
+Concrete instantiation (Phase 1 pilot target): extract a fixed field set from **receipts** — short,
+semi-structured documents — into the schema now locked in `src/distill/schema.py` as `receipt-v1`
+(§4). Primary dataset candidate **CORD**, fallback **SROIE** (D-006). This is confirmed as final
+only once the Phase-1 pilot shows the teacher clears the field-F1 bar on real inputs.
 
 ## Selection method
 
@@ -69,21 +71,24 @@ if the chosen extraction dataset disappoints.
 **Input:** raw text of one document (for image sources, the OCR'd text layer — the student is a
 *text* 8B model, so we linearize to text and keep OCR/vision out of scope).
 
-**Output:** a fixed JSON object validated by `schema.py`. Illustrative (final fields locked in
-Phase 1):
+**Output:** a fixed JSON object validated by `schema.py`. Locked in Phase 1 as `receipt-v1`
+(`extra="forbid"`; every field optional/nullable except the always-present `line_items` list, so a
+receipt missing a field is representable rather than invalid):
 
 ```json
 {
   "vendor": "ACME Corp",
-  "invoice_no": "4471",
   "date": "2026-03-02",
   "currency": "USD",
-  "line_items": [{"description": "Widget", "quantity": 2, "unit_price": 12.00}],
+  "line_items": [{"description": "Widget", "quantity": 2, "unit_price": 12.00, "total_price": 24.00}],
   "subtotal": 24.00,
   "tax": 1.92,
   "total": 25.92
 }
 ```
+
+> Changed from the earlier illustrative sketch: dropped `invoice_no` (receipts, not invoices) and
+> added `total_price` to each line item. `schema.py` is now the single source of truth for fields.
 
 ## Evaluation method (defined here, implemented in Phase 1 / used in Phase 4)
 
@@ -116,7 +121,12 @@ touch splits refuse to open `test.jsonl` unless invoked with an explicit `--allo
 - **Secondary (confidence):** low sequence log-prob / presence of required-field nulls / optional
   self-consistency check → escalate. Kept simple and thresholded; tuned on val, reported on test.
 
-## Open items for Phase 1 (locked via a 50–100 sample pilot)
-- Exact dataset + document type; whether human gold exists or must be built.
-- Final schema fields + which are required vs optional.
-- Teacher model tier (quality vs $ trade-off) for the bulk run.
+## Open items for Phase 1 (status)
+- ✅ **Final schema fields + required/optional** — locked as `receipt-v1` in `schema.py`
+  (all fields optional/nullable; `line_items` always present, possibly empty; `extra="forbid"`).
+- 🟡 **Exact dataset + document type; whether human gold exists** — candidate **receipts / CORD**
+  (fallback SROIE), confirmed final only after the pilot (D-006). CORD ships ground-truth parses;
+  we still verify its gold maps onto `receipt-v1` on acquisition. *Blocked in-sandbox:* dataset
+  download needs network beyond the allowed hosts.
+- 🟡 **Teacher model tier for the bulk run** — ceiling measured with Opus 5; Haiku 4.5 piloted on
+  the same inputs as the cheaper-tier candidate; final bulk tier chosen in Phase 2 (D-007).

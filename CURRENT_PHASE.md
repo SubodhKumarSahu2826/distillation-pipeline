@@ -4,33 +4,54 @@
 
 ## Active phase
 
-**Phase 0 ✅ COMPLETE. Next: Phase 1 — awaiting "Start Phase 1" (not yet begun).**
+**Phase 1 — Task selection + teacher baseline. 🟡 IN PROGRESS.**
 
-Phase 0 delivered a verified skeleton, committed as `4b2413a` ("chore: initialize project
-(Phase 0)"): `pyproject.toml` (zero runtime deps, heavy deps in extras), `.gitignore`,
-`.env.example`, `src/distill/{__init__,config,logging}.py`, `tests/test_smoke.py`, `README.md`.
-`pytest` → 3 passed; `ruff check` → clean; `pip install -e .` verified; working tree clean.
+Built & verified **offline** this session (no money spent):
+- `src/distill/schema.py` — the output contract, `SCHEMA_VERSION = "receipt-v1"`
+  (Pydantic v2, `extra="forbid"`, `parse_and_validate` / `is_valid`).
+- `src/distill/evaluate.py` — deterministic metrics: micro field-F1, schema-validity rate,
+  exact-match, per-field accuracy; order-insensitive line-item matching.
+- `src/distill/teacher.py` — prompt `extract-v1`, offline token/cost estimators, and a paid
+  `extract()` path (`anthropic` imported lazily; captures usage + cost).
+- `scripts/run_teacher.py` — pilot runner, **dry-run by default**; prints requests/tokens/price/
+  projected-cost and refuses `*test*.jsonl` without `--allow-test`; needs `--confirm` (+ API key)
+  to spend.
+- `config.py` teacher defaults set to the Opus 5 ceiling + labelled list prices (D-009);
+  `pydantic` promoted to a runtime dep (D-008).
+- Tests: `pytest` **20 passed** (3 smoke + 10 schema + 7 evaluate); `ruff check` clean.
 
 ## Next exact action
 
-> When the user says **"Start Phase 1"**, open `docs/phases/phase-1-task-selection.md` and do
-> **only** that phase. Do not begin it before then.
+**Acquire the receipts dataset, build the frozen test set, then run the approved paid pilot.**
 
-Phase 1 is task selection + teacher baseline (schema, held-out test set, teacher ceiling number).
-It is the first phase that can spend money — enforce the money guardrails (pilot first, `--dry-run`,
-`--limit N`, cost estimate + explicit approval before any bulk teacher run).
+1. **Get the data** (candidate **CORD**, fallback **SROIE**; D-006). *Blocked in-sandbox* — network
+   is limited to `agentrouter.org` + `api.anthropic.com`, so download is a user-run step or needs a
+   network allowance. Land raw docs as JSONL (`{"id", "text", ...gold...}`) under `data/raw/`.
+2. **Build the frozen test set** — hash-split on normalized input (no near-dup leakage), write
+   `data/splits/test.jsonl`. It is **not read again until Phase 4**; the runner already guards it.
+3. **Cost gate before any spend** (CLAUDE.md §3 / the verbatim approval protocol):
+   run the free `count_tokens` on real pilot inputs → replace the ~700-token estimate → confirm
+   endpoint pricing → `python scripts/run_teacher.py --input data/raw/receipts.jsonl --limit 50`
+   (dry run) → **present requests / tokens / cost / pilot size and WAIT for explicit approval.**
+4. Only after approval: re-run with `--confirm` for Opus 5, then the same for `claude-haiku-4-5`
+   (D-007). Score both with `evaluate.py`, record E-001 + the teacher table in `benchmarking.md`,
+   and the actual pilot cost in `cost-analysis.md` §1b.
 
 ## Do NOT
 
-- Do not begin Phase 1 until explicitly told "Start Phase 1".
-- Do not skip ahead to later phases.
-- Do not call paid APIs, rent GPUs, or download models until the phase that needs them.
+- **Do not make any paid teacher call without the approval protocol** (explain call, #requests,
+  tokens, cost, pilot size → wait for explicit approval). Never bulk-call without approval.
+- **Never** use `data/splits/test.jsonl` for generation/tuning — read-only, Phase 4 only.
+- Do not generate the full 5k–10k training set, fine-tune, download the 8B student, start vLLM,
+  build the router or economics — those are Phases 2–6.
+- Do not begin Phase 2 automatically.
 
 ## Pre-flight for the next session
 
-1. `git log --oneline` should show `4b2413a`; `git status` clean.
-2. Read `PROJECT_STATE.md` + this file + `docs/handoffs/latest.md`, then the Phase 1 doc.
-3. **Git commits must be run by the user** (or after adjusting the sandbox): this sandbox denies
-   `.git` writes in the workspace (D-005). Prepare the commit and hand the command to the user.
-4. `.env` loading (python-dotenv) lands in Phase 1 with the teacher client; create `.env` from
-   `.env.example` when a real `ANTHROPIC_API_KEY` is needed.
+1. `git log --oneline` → `069518e` on top; the Phase-1 code below is uncommitted until the user runs
+   the commit (sandbox denies `.git` writes, D-005).
+2. `.venv/bin/python -m pytest` → 20 passed; lint via `/opt/anaconda3/bin/ruff check .` (the venv has
+   no `ruff`/`pytest` console scripts — use `python -m pytest` and the anaconda `ruff` binary).
+3. Read `PROJECT_STATE.md` + this file + `docs/handoffs/latest.md`, then the Phase 1 doc.
+4. Create `.env` from `.env.example` with a real `ANTHROPIC_API_KEY` only when running the approved
+   pilot; confirm `ANTHROPIC_BASE_URL` (agentrouter) pricing first (D-009).

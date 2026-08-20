@@ -21,11 +21,19 @@ Format (mandatory):
 
 ## Planned experiments (hypotheses to fill on execution)
 
-### E-001 — Teacher baseline (ceiling)   [Phase 1]
-- Hypothesis: teacher achieves ≥ high-80s field-F1 on the frozen test set → a usable ceiling.
-- Variable: none (single measurement).
-- Control: frozen test set, fixed prompt, fixed teacher model.
-- Expected: high F1; if not, **stop and reconsider the task** (documented failure mode).
+### E-001 — Teacher baseline (ceiling) + cost-tier A/B   [Phase 1]
+- Hypothesis: the ceiling teacher (Opus 5) achieves ≥ high-80s field-F1 on the frozen receipts test
+  set → a usable ceiling; a cheaper tier (Haiku 4.5) may retain most of that F1 at a fraction of the
+  cost → good enough for bulk generation (informs Phase 2, D-007).
+- Variable: teacher model tier (**claude-opus-5** vs **claude-haiku-4-5**) on identical inputs/prompt.
+- Control: frozen test set, fixed prompt (`extract-v1`), same evaluator code path, `effort=low`.
+- Metrics to record: field-F1, schema-validity rate, exact-match, per-field accuracy, and
+  **actual pilot $** for each tier.
+- Expected: Opus 5 high F1 (usable ceiling); Haiku 4.5 close behind. If the ceiling F1 is **not**
+  high, **stop and reconsider the task** (documented failure mode) rather than proceed to tuning.
+- Status: **not yet run** — schema, evaluator, teacher client and the dry-run cost gate are built &
+  tested offline; blocked on acquiring the dataset + building the frozen test set, then explicit
+  pilot approval (paid). Estimate ~$0.55 for a 50-sample Opus 5 pilot (see `cost-analysis.md` §1a).
 - Actual: _TBD_
 - Conclusion: _TBD_
 

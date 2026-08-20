@@ -8,16 +8,14 @@ version = "0.0.0"
 description = "Fine-tuning model distillation pipeline: distill structured extraction from a teacher LLM into a self-hosted student."
 readme = "README.md"
 requires-python = ">=3.10"
-# Phase 0 has NO required runtime deps on purpose: the package must import and its
-# config must load with a bare interpreter so the smoke test is fast and offline.
-# Heavy, phase-specific deps live in the optional extras below and are installed only
-# by the phase that needs them (see docs/phases/).
-dependencies = []
+# Phase 1 introduces the Pydantic extraction contract (src/distill/schema.py), which is
+# imported across the pipeline — so pydantic is now a real runtime dependency (updates
+# Phase-0 D-004's "zero runtime deps"). Heavier, phase-specific deps stay in extras below.
+dependencies = ["pydantic>=2"]
 
 [project.optional-dependencies]
-# Phase 1–2: talk to the teacher API and define/validate the JSON contract.
+# Phase 1–2: talk to the teacher API.
 teacher = ["anthropic>=0.40"]
-data = ["pydantic>=2"]
 # Phase 3: LoRA/QLoRA fine-tuning of the student.
 train = [
   "torch",
