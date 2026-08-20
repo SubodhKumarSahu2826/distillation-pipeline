@@ -17,10 +17,20 @@ FP **and** FN; only gold → FN; only prediction → FP. An unparseable predicti
 contributes no values (so it is pure FN against gold — invalid output hurts recall,
 which is the honest treatment). Line items are aligned order-insensitively by
 normalized description before their sub-fields are scored.
+
+Scored-field policy: datasets differ in which fields they label. ``evaluate`` and
+``score_pair`` take an optional ``scored_fields`` allow-list — any non-empty subset of
+``ALL_FIELDS`` — so a field the dataset gives no ground truth for is neither rewarded nor
+penalized: it contributes no TP/FP/FN and is dropped from exact-match and per-field
+accuracy. Default ``None`` scores every field (unchanged behavior). The per-dataset
+policy itself lives in ``dataset.py`` (e.g. ``CORD_SCORED_FIELDS``), so this module stays
+dataset-agnostic. Schema-validity is independent of the policy — outputs are always
+validated against the full ``receipt-v1`` contract.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -28,6 +38,9 @@ from .schema import LineItem, Receipt, parse_and_validate
 
 SCALAR_FIELDS = ("vendor", "date", "currency", "subtotal", "tax", "total")
 ITEM_FIELDS = ("description", "quantity", "unit_price", "total_price")
+# Every scorable top-level field. A dataset scoring policy is any non-empty subset of this;
+# the concrete per-dataset allow-lists live in dataset.py (e.g. CORD_SCORED_FIELDS).
+ALL_FIELDS: tuple[str, ...] = (*SCALAR_FIELDS, "line_items")
 
 _DATE_FORMATS = (
     "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y", "%d.%m.%Y",
@@ -92,6 +105,29 @@ def canonical(r: Receipt | None) -> dict:
         return {**{f: None for f in SCALAR_FIELDS}, "line_items": []}
     out = {f: _norm_scalar(f, getattr(r, f)) for f in SCALAR_FIELDS}
     out["line_items"] = sorted((_norm_item(it) for it in r.line_items), key=lambda t: repr(t))
+    return out
+
+
+# --- field policy ----------------------------------------------------------------
+
+def _resolve_fields(scored_fields: Iterable[str] | None) -> frozenset[str]:
+    """Validate a scored-field allow-list; ``None`` → score every field in ``ALL_FIELDS``."""
+    if scored_fields is None:
+        return frozenset(ALL_FIELDS)
+    resolved = frozenset(scored_fields)
+    unknown = resolved - frozenset(ALL_FIELDS)
+    if unknown:
+        raise ValueError(f"unknown scored field(s) {sorted(unknown)}; valid: {ALL_FIELDS}")
+    if not resolved:
+        raise ValueError("scored_fields must name at least one field")
+    return resolved
+
+
+def _restrict(canon: dict, scored: frozenset[str]) -> dict:
+    """Project a canonical record onto the scored fields (used for exact-match)."""
+    out = {f: canon[f] for f in SCALAR_FIELDS if f in scored}
+    if "line_items" in scored:
+        out["line_items"] = canon["line_items"]
     return out
 
 
@@ -170,13 +206,23 @@ def _align_items(
     return matched, unmatched_gold, unmatched_pred
 
 
-def score_pair(pred: Receipt | None, gold: Receipt) -> Counts:
-    """Field-slot counts for one (prediction, gold) pair."""
+def score_pair(
+    pred: Receipt | None, gold: Receipt, scored_fields: Iterable[str] | None = None
+) -> Counts:
+    """Field-slot counts for one (prediction, gold) pair, over the scored fields.
+
+    ``scored_fields`` is an optional allow-list (subset of ``ALL_FIELDS``); ``None`` scores
+    every field. Fields outside the policy contribute no counts.
+    """
+    scored = _resolve_fields(scored_fields)
     c = Counts()
     g, p = canonical(gold), canonical(pred)
     for f in SCALAR_FIELDS:
-        c._slot(g[f], p[f])
+        if f in scored:
+            c._slot(g[f], p[f])
 
+    if "line_items" not in scored:
+        return c
     matched, un_g, un_p = _align_items(g["line_items"], p["line_items"])
     for gi, pi in matched:
         # description matched by construction → TP; score the remaining sub-fields.
@@ -203,6 +249,7 @@ class Report:
     schema_validity: float
     exact_match: float
     per_field_accuracy: dict
+    scored_fields: tuple[str, ...]
 
     def as_dict(self) -> dict:
         return {
@@ -211,6 +258,7 @@ class Report:
             "schema_validity": round(self.schema_validity, 4),
             "exact_match": round(self.exact_match, 4),
             "per_field_accuracy": {k: round(v, 4) for k, v in self.per_field_accuracy.items()},
+            "scored_fields": list(self.scored_fields),
         }
 
 
@@ -232,36 +280,49 @@ def schema_validity_rate(texts: list[str]) -> float:
     return valid / len(texts)
 
 
-def _per_field_accuracy(preds: list[Receipt | None], golds: list[Receipt]) -> dict:
-    acc = {f: 0 for f in SCALAR_FIELDS}
-    acc["line_items"] = 0
+def _per_field_accuracy(
+    preds: list[Receipt | None], golds: list[Receipt], scored: frozenset[str]
+) -> dict:
+    fields = [f for f in SCALAR_FIELDS if f in scored]
+    score_items = "line_items" in scored
+    acc = {f: 0 for f in fields}
+    if score_items:
+        acc["line_items"] = 0
     for pred, gold in zip(preds, golds):
         g, p = canonical(gold), canonical(pred)
-        for f in SCALAR_FIELDS:
+        for f in fields:
             if g[f] == p[f]:
                 acc[f] += 1
-        if g["line_items"] == p["line_items"]:
+        if score_items and g["line_items"] == p["line_items"]:
             acc["line_items"] += 1
     n = len(golds) or 1
     return {k: v / n for k, v in acc.items()}
 
 
-def evaluate(pred_texts: list[str], golds: list[Receipt]) -> Report:
+def evaluate(
+    pred_texts: list[str], golds: list[Receipt], scored_fields: Iterable[str] | None = None
+) -> Report:
     """Full deterministic report for raw predictions ``pred_texts`` vs ``golds``.
 
     ``pred_texts`` and ``golds`` are aligned by index. Gold records are assumed valid.
+    ``scored_fields`` is an optional allow-list (subset of ``ALL_FIELDS``); ``None`` scores
+    every field. Fields the policy excludes contribute no TP/FP/FN and are dropped from
+    exact-match and per-field accuracy — use it for datasets whose gold omits some fields
+    (e.g. CORD has no vendor/date/currency; see ``dataset.CORD_SCORED_FIELDS``). Schema
+    validity always checks the full ``receipt-v1`` contract, regardless of the policy.
     """
     if len(pred_texts) != len(golds):
         raise ValueError(f"length mismatch: {len(pred_texts)} preds vs {len(golds)} golds")
+    scored = _resolve_fields(scored_fields)
     preds = parse_predictions(pred_texts)
 
     micro = Counts()
     for pred, gold in zip(preds, golds):
-        micro.add(score_pair(pred, gold))
+        micro.add(score_pair(pred, gold, scored))
 
     exact = 0
     for pred, gold in zip(preds, golds):
-        if canonical(pred) == canonical(gold):
+        if _restrict(canonical(pred), scored) == _restrict(canonical(gold), scored):
             exact += 1
     n = len(golds)
 
@@ -270,5 +331,6 @@ def evaluate(pred_texts: list[str], golds: list[Receipt]) -> Report:
         field_f1=micro.as_dict(),
         schema_validity=(sum(1 for p in preds if p is not None) / n) if n else 0.0,
         exact_match=(exact / n) if n else 0.0,
-        per_field_accuracy=_per_field_accuracy(preds, golds),
+        per_field_accuracy=_per_field_accuracy(preds, golds, scored),
+        scored_fields=tuple(f for f in ALL_FIELDS if f in scored),
     )

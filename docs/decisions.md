@@ -5,6 +5,32 @@ context → decision → why → consequence. Reference by ID (D-00N) from other
 
 ---
 
+### D-010 — CORD scoring policy: score only the fields CORD labels
+- **Context:** We commit to the **original** CORD corpus (`clovaai/cord`), not the Hugging Face
+  `cord-v2` variant. CORD ships ground-truth parses for line items (`menu`: name/count/unitprice/
+  price), the `sub_total` block (subtotal, tax), and the `total` — but it has **no** ground-truth
+  field for the merchant name, the purchase date, or the currency. Our `receipt-v1` schema (and the
+  `extract-v1` prompt) still ask the model for `vendor`/`date`/`currency`.
+- **Decision:** on CORD, the evaluator scores **only the fields CORD labels** —
+  `{subtotal, tax, total, line_items}`. `vendor`, `date`, and `currency` are **excluded** from the
+  headline metric (field-F1, exact-match, per-field accuracy). Implemented as a general, optional
+  `scored_fields` allow-list on `evaluate`/`score_pair` (default `None` = score every field, so all
+  existing behavior is unchanged); the CORD-specific set lives in `src/distill/dataset.py`
+  (`CORD_SCORED_FIELDS`), keeping the evaluator dataset-agnostic (no CORD names in `evaluate.py`).
+- **Why:** scoring a model against a field the dataset never labels is dishonest in both directions
+  — a *correct* vendor extraction would count as a **false positive** against an empty gold (an
+  ~23-F1-point artificial penalty on the illustrative case), and a correct value can never be
+  credited. Excluding unlabeled fields makes the teacher **ceiling** and the student **retention**
+  numbers reflect real extraction quality on labeled data, not an artifact of CORD's coverage. The
+  fields are still *extracted* (they have downstream/router value) and the output is still validated
+  against the **full** `receipt-v1` schema — only value-scoring is scoped.
+- **Consequence:** the `receipt-v1` schema is **unchanged**. The Phase-1 teacher table and every
+  Phase-4 comparison on CORD are computed with `scored_fields=CORD_SCORED_FIELDS` and must state the
+  scored-field set (the `Report` now carries `scored_fields`). If we later add a human-verified
+  vendor/date/currency gold, those fields can be re-included by widening the allow-list. `receipt-v1`
+  fields not covered by CORD gold are documented in `dataset.CORD_UNSCORED_FIELDS`.
+  (Phase 1, 2026-08-21)
+
 ### D-009 — Teacher pricing is a labelled assumption pending endpoint confirmation
 - **Context:** `ANTHROPIC_BASE_URL=https://agentrouter.org/` is a third-party router; real
   per-token pricing there may differ from Anthropic list prices.

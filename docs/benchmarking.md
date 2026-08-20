@@ -10,12 +10,15 @@ cell is either measured or `TBD`. Raw outputs live in `artifacts/`; this file ho
 | Metric | Value | Notes |
 |--------|:-----:|-------|
 | Field-level F1 (primary) | _TBD_ | on frozen test set |
-| Schema-validity rate | _TBD_ | |
-| Full-record exact match | _TBD_ | |
+| Schema-validity rate | _TBD_ | against full `receipt-v1` |
+| Full-record exact match | _TBD_ | over scored fields |
 | Test set size | _TBD_ | frozen, untouched until Phase 4 |
 | Teacher model / prompt version | _TBD_ | |
+| Scored fields | `subtotal, tax, total, line_items` | CORD policy D-010; excludes vendor/date/currency (CORD has no gold for them) |
 
-> This is the **ceiling**. All retention numbers are relative to it.
+> This is the **ceiling**. All retention numbers are relative to it. On CORD we score only the
+> fields CORD labels (D-010); `vendor`/`date`/`currency` are extracted but not scored, so the
+> number reflects real quality on labeled fields rather than CORD's coverage gaps.
 
 ## Student per-config (Phase 3 → val; Phase 4 → test)
 

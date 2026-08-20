@@ -1,5 +1,8 @@
 """Metric tests: exact values on tiny hand-built cases (Phase 1 acceptance)."""
 
+import pytest
+
+from distill.dataset import CORD_SCORED_FIELDS
 from distill.evaluate import Counts, canonical, evaluate, score_pair
 from distill.schema import LineItem, Receipt
 
@@ -67,3 +70,54 @@ def test_normalization_casefold_and_rounding():
 def test_counts_f1_empty_is_one():
     # No gold slots and no predictions => nothing to get wrong => f1 = 1.0
     assert Counts().f1 == 1.0
+
+
+# --- scored-field policy (D-010: score only the fields a dataset labels) ---
+
+def test_scored_fields_allowlist_excludes_unlabeled_fields():
+    # CORD-style gold labels amounts + items but not vendor/date/currency; the model
+    # still extracts those three. They must not be scored against absent gold.
+    gold = Receipt(subtotal=10.0, tax=1.0, total=11.0)
+    pred = Receipt(
+        vendor="ACME", date="2026-01-01", currency="USD",
+        subtotal=10.0, tax=1.0, total=11.0,
+    )
+    pj = pred.model_dump_json()
+
+    # Default policy scores every field → the 3 extracted-but-unlabeled fields are FPs.
+    full = evaluate([pj], [gold])
+    assert full.field_f1["tp"] == 3 and full.field_f1["fp"] == 3
+    assert full.exact_match == 0.0
+
+    # CORD policy scores only labeled fields → perfect, no penalty for vendor/date/currency.
+    cord = evaluate([pj], [gold], scored_fields=CORD_SCORED_FIELDS)
+    assert cord.field_f1["tp"] == 3  # subtotal, tax, total
+    assert (cord.field_f1["fp"], cord.field_f1["fn"]) == (0, 0)
+    assert cord.field_f1["f1"] == 1.0
+    assert cord.exact_match == 1.0  # unscored fields are ignored by exact-match too
+    assert set(cord.scored_fields) == set(CORD_SCORED_FIELDS)
+    assert "vendor" not in cord.per_field_accuracy  # unscored → not reported
+    assert cord.schema_validity == 1.0  # still validated against the full receipt-v1 schema
+
+
+def test_scored_fields_still_penalizes_wrong_labeled_field():
+    gold = Receipt(subtotal=10.0, tax=1.0, total=11.0)
+    pred = Receipt(vendor="ACME", subtotal=10.0, tax=1.0, total=99.0)  # total wrong
+    cord = evaluate([pred.model_dump_json()], [gold], scored_fields=CORD_SCORED_FIELDS)
+    assert cord.field_f1["tp"] == 2  # subtotal, tax
+    assert (cord.field_f1["fp"], cord.field_f1["fn"]) == (1, 1)  # total wrong
+    assert cord.per_field_accuracy["total"] == 0.0
+
+
+def test_scored_fields_score_pair_ignores_unscored_scalars():
+    gold = Receipt(vendor="ACME", total=10.0)
+    pred = Receipt(vendor="OTHER", total=10.0)  # vendor wrong, total right
+    # vendor excluded → only total scored → clean TP, no penalty for the wrong vendor.
+    c = score_pair(pred, gold, scored_fields={"total"})
+    assert (c.tp, c.fp, c.fn) == (1, 0, 0)
+
+
+def test_unknown_scored_field_is_rejected():
+    gold = Receipt(total=1.0)
+    with pytest.raises(ValueError):
+        evaluate([gold.model_dump_json()], [gold], scored_fields={"bogus"})

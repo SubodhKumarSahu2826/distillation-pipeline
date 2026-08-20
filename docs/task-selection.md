@@ -99,6 +99,19 @@ receipt missing a field is representable rather than invalid):
 - **Quality retention** = student_primary_metric ÷ teacher_primary_metric (reported as %).
 - **Same evaluator code path for teacher and student** — the comparison is only fair if identical.
 
+### Scored-field policy (dataset label coverage) — D-010
+
+The headline metric scores **only the fields the dataset provides independent ground truth for.**
+CORD (`clovaai/cord`) labels line items, subtotal, tax, and total, but **not** vendor, date, or
+currency — so on CORD we score `{subtotal, tax, total, line_items}` and **exclude**
+`vendor`/`date`/`currency`. Scoring a field the dataset never labels is dishonest both ways: a
+*correct* extraction would count as a false positive against empty gold, and a correct value could
+never be credited — it would depress the ceiling and retention for a coverage artifact, not a real
+error. The fields are still *extracted* (real value + a router signal) and the output is still
+validated against the **full** `receipt-v1` schema; only value-scoring is scoped. Mechanism:
+`evaluate(..., scored_fields=...)` (a general allow-list; default = all fields); the CORD set is
+`dataset.CORD_SCORED_FIELDS`. Every reported number states its scored-field set.
+
 ### Gold labels & honest ceiling
 
 Two independent quality anchors, kept distinct:
@@ -126,7 +139,10 @@ touch splits refuse to open `test.jsonl` unless invoked with an explicit `--allo
   (all fields optional/nullable; `line_items` always present, possibly empty; `extra="forbid"`).
 - 🟡 **Exact dataset + document type; whether human gold exists** — candidate **receipts / CORD**
   (fallback SROIE), confirmed final only after the pilot (D-006). CORD ships ground-truth parses;
-  we still verify its gold maps onto `receipt-v1` on acquisition. *Blocked in-sandbox:* dataset
-  download needs network beyond the allowed hosts.
+  we still verify its gold maps onto `receipt-v1` on acquisition. **Scoring policy resolved (D-010):**
+  we use the original `clovaai/cord`; CORD gold covers `{subtotal, tax, total, line_items}` and does
+  **not** label `vendor`/`date`/`currency`, so those three are excluded from the CORD headline metric
+  via `dataset.CORD_SCORED_FIELDS`. *Blocked in-sandbox:* dataset download needs network beyond the
+  allowed hosts.
 - 🟡 **Teacher model tier for the bulk run** — ceiling measured with Opus 5; Haiku 4.5 piloted on
   the same inputs as the cheaper-tier candidate; final bulk tier chosen in Phase 2 (D-007).

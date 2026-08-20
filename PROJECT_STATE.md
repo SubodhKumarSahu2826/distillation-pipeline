@@ -5,12 +5,15 @@
 
 **Project:** Fine-Tuning Model Distillation Pipeline
 **Task distilled:** structured extraction — document → fixed JSON schema (see `docs/task-selection.md`)
-**Last updated:** 2026-08-21 (Phase 1 — task selection + teacher baseline, in progress)
-**Overall status:** 🟡 PHASE 1 IN PROGRESS — schema (`receipt-v1`), deterministic evaluator, teacher
-client, and a dry-run cost gate are built & tested offline (`pytest` **20 passed**, `ruff` clean).
+**Last updated:** 2026-08-21 (Phase 1 — task selection + teacher baseline, in progress; CORD scoring policy resolved, D-010)
+**Overall status:** 🟡 PHASE 1 IN PROGRESS — schema (`receipt-v1`), deterministic evaluator (now with a
+dataset-specific **scored-field policy**), teacher client, and a dry-run cost gate are built & tested
+offline (`pytest` **26 passed**, `ruff` clean). CORD evaluation policy is decided (D-010): score only
+the fields CORD labels.
 **Not yet done:** acquire the receipts dataset, build the frozen test set, and measure the teacher
-baseline (needs an approved **paid** pilot). Last commit `069518e`; Phase-1 code is uncommitted
-(hand the commit to the user, D-005). **$0 spent** (pilot estimated ~$0.55, unspent).
+baseline (needs an approved **paid** pilot). Phase-1 code committed at `71e14d9`; **this session's
+scored-field-policy change is uncommitted** (hand the commit to the user, D-005). **$0 spent** (pilot
+estimated ~$0.55, unspent).
 
 ---
 
@@ -36,8 +39,9 @@ Legend: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 
 | Artifact | Path | Produced in | Notes |
 |----------|------|-------------|-------|
-| Output schema | `src/distill/schema.py` | Phase 1 | ✅ `receipt-v1` Pydantic contract + parse/validate |
-| Evaluator | `src/distill/evaluate.py` | Phase 1 | ✅ field-F1 / schema-validity / exact-match / per-field |
+| Output schema | `src/distill/schema.py` | Phase 1 | ✅ `receipt-v1` Pydantic contract + parse/validate (unchanged by D-010) |
+| Evaluator | `src/distill/evaluate.py` | Phase 1 | ✅ field-F1 / schema-validity / exact-match / per-field; optional `scored_fields` allow-list (D-010) |
+| Dataset policy | `src/distill/dataset.py` | Phase 1 | ✅ `CORD_SCORED_FIELDS` (D-010); CORD→`receipt-v1` converter deferred to Phase 2 |
 | Teacher client | `src/distill/teacher.py` | Phase 1 | ✅ prompt `extract-v1`; token/cost capture (lazy anthropic) |
 | Pilot runner | `scripts/run_teacher.py` | Phase 1 | ✅ dry-run cost gate; `--confirm` + `--allow-test` guards |
 | Held-out test set | `data/splits/test.jsonl` | Phase 1 | ⬜ not built — **do not touch until Phase 4** |
@@ -64,11 +68,13 @@ Full log: `docs/decisions.md`. Most consequential so far:
 - **D-007** Teacher tiers: measure ceiling with **Opus 5**; A/B **Haiku 4.5** as the cheaper bulk-generation tier (locked in Phase 2). *Phase 1.*
 - **D-008** `pydantic>=2` promoted to a required runtime dep (schema is core); updates D-004. *Phase 1.*
 - **D-009** Teacher pricing in `config.py` is a **labelled assumption** (Opus 5 list price); confirm on the agentrouter endpoint + `count_tokens` before any spend. *Phase 1.*
+- **D-010** CORD scoring policy: use original `clovaai/cord`; score **only** CORD-labelled fields (`subtotal/tax/total/line_items`), **exclude** `vendor/date/currency` from the headline metric via a general `scored_fields` allow-list (`dataset.CORD_SCORED_FIELDS`). Schema unchanged. *Phase 1.*
 
 ## Open questions (resolve in the phase that needs them)
 
 - Confirm receipts/CORD as final (vs SROIE) + pick the bulk teacher tier — both gated on the Phase-1
   pilot. **Blocked in-sandbox:** dataset download needs network beyond `agentrouter.org`/`api.anthropic.com`.
+  (CORD **scoring** policy is resolved — D-010; what remains is acquiring the data and clearing the pilot.)
 - GPU tier for training vs serving — locked in Phase 3 / Phase 5 from measured memory + throughput.
 
 ## Known costs incurred to date
