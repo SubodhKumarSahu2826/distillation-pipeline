@@ -1,0 +1,29 @@
+# --- Project artifacts (never committed; referenced by path + summary only) ---
+data/
+models/
+runs/
+artifacts/
+
+# --- Secrets / local env ---
+.env
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+
+# --- Python caches / build ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# --- Experiment tracking ---
+wandb/
+
+# --- Harness / OS scratch ---
+.claude/.cc-writes/
+.DS_Store

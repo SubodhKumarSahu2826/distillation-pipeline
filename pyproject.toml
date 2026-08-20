@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "distill"
+version = "0.0.0"
+description = "Fine-tuning model distillation pipeline: distill structured extraction from a teacher LLM into a self-hosted student."
+readme = "README.md"
+requires-python = ">=3.10"
+# Phase 0 has NO required runtime deps on purpose: the package must import and its
+# config must load with a bare interpreter so the smoke test is fast and offline.
+# Heavy, phase-specific deps live in the optional extras below and are installed only
+# by the phase that needs them (see docs/phases/).
+dependencies = []
+
+[project.optional-dependencies]
+# Phase 1–2: talk to the teacher API and define/validate the JSON contract.
+teacher = ["anthropic>=0.40"]
+data = ["pydantic>=2"]
+# Phase 3: LoRA/QLoRA fine-tuning of the student.
+train = [
+  "torch",
+  "transformers",
+  "peft",
+  "trl",
+  "accelerate",
+  "bitsandbytes",
+  "datasets>=2",
+  "wandb",
+]
+# Phase 5: serve the student and route/escalate to the teacher.
+serve = ["vllm", "fastapi", "uvicorn"]
+# Local development tooling (already available on most machines).
+dev = ["ruff>=0.6", "pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # pycodestyle errors, pyflakes, import sorting
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
