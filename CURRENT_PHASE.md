@@ -4,35 +4,33 @@
 
 ## Active phase
 
-**Phase: 0 — Foundation (🟡 code complete & verified; git init/commit pending)**
+**Phase 0 ✅ COMPLETE. Next: Phase 1 — awaiting "Start Phase 1" (not yet begun).**
 
-The repository skeleton is built and verified: `pyproject.toml` (zero runtime deps, heavy deps
-in extras), `.gitignore`, `.env.example`, `src/distill/{__init__,config,logging}.py`,
-`tests/test_smoke.py`, `README.md`. `pytest` (3 passed) and `ruff check` are green, and an
-offline editable install succeeds. **The only remaining Phase 0 step is `git init` + the initial
-commit**, which the sandbox blocks (it denies `.git` writes in the workspace — see D-005).
+Phase 0 delivered a verified skeleton, committed as `4b2413a` ("chore: initialize project
+(Phase 0)"): `pyproject.toml` (zero runtime deps, heavy deps in extras), `.gitignore`,
+`.env.example`, `src/distill/{__init__,config,logging}.py`, `tests/test_smoke.py`, `README.md`.
+`pytest` → 3 passed; `ruff check` → clean; `pip install -e .` verified; working tree clean.
 
 ## Next exact action
 
-Run, from a normal terminal in `AI Projects/distillation-pipeline/` (outside the sandbox):
+> When the user says **"Start Phase 1"**, open `docs/phases/phase-1-task-selection.md` and do
+> **only** that phase. Do not begin it before then.
 
-```bash
-git init
-git add -A
-git commit -m "chore: initialize project (Phase 0)"
-```
-
-Then `git status` should be clean and `git log` should show the one commit. That closes Phase 0.
-After that, **await the user saying "Start Phase 1"** — do not begin Phase 1 automatically.
+Phase 1 is task selection + teacher baseline (schema, held-out test set, teacher ceiling number).
+It is the first phase that can spend money — enforce the money guardrails (pilot first, `--dry-run`,
+`--limit N`, cost estimate + explicit approval before any bulk teacher run).
 
 ## Do NOT
 
 - Do not begin Phase 1 until explicitly told "Start Phase 1".
 - Do not skip ahead to later phases.
-- Do not call paid APIs, rent GPUs, or download models.
+- Do not call paid APIs, rent GPUs, or download models until the phase that needs them.
 
 ## Pre-flight for the next session
 
-1. Confirm the init commit landed (`git log --oneline`); if not, run the commands above.
-2. Read `PROJECT_STATE.md` + this file + `docs/handoffs/latest.md`.
-3. `.env` is still not needed (only `.env.example` exists); `.env` loading arrives in Phase 1.
+1. `git log --oneline` should show `4b2413a`; `git status` clean.
+2. Read `PROJECT_STATE.md` + this file + `docs/handoffs/latest.md`, then the Phase 1 doc.
+3. **Git commits must be run by the user** (or after adjusting the sandbox): this sandbox denies
+   `.git` writes in the workspace (D-005). Prepare the commit and hand the command to the user.
+4. `.env` loading (python-dotenv) lands in Phase 1 with the teacher client; create `.env` from
+   `.env.example` when a real `ANTHROPIC_API_KEY` is needed.

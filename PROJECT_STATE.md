@@ -5,10 +5,10 @@
 
 **Project:** Fine-Tuning Model Distillation Pipeline
 **Task distilled:** structured extraction — document → fixed JSON schema (see `docs/task-selection.md`)
-**Last updated:** 2026-08-20 (Phase 0 — foundation)
-**Overall status:** 🟡 PHASE 0 nearly done — skeleton built, `pytest` (3) + `ruff` green, editable
-install verified; **only remaining step is `git init` + initial commit**, blocked by the sandbox
-denying `.git` writes in the workspace (see D-005). $0 spent.
+**Last updated:** 2026-08-20 (Phase 0 — foundation, complete)
+**Overall status:** ✅ PHASE 0 COMPLETE — skeleton built; `pytest` (3) + `ruff` green; editable
+install verified; committed as `4b2413a` "chore: initialize project (Phase 0)", working tree clean.
+Awaiting **"Start Phase 1"**. $0 spent.
 
 ---
 
@@ -17,7 +17,7 @@ denying `.git` writes in the workspace (see D-005). $0 spent.
 | Phase | Name | Status | Key output | Doc |
 |------:|------|--------|-----------|-----|
 | — | Planning | ✅ done | this doc set | `docs/project-plan.md` |
-| 0 | Foundation | 🟡 code done; git commit pending | repo skeleton, config, logging, smoke tests | `docs/phases/phase-0-foundation.md` |
+| 0 | Foundation | ✅ done | repo skeleton, config, logging, smoke tests (commit `4b2413a`) | `docs/phases/phase-0-foundation.md` |
 | 1 | Task selection + teacher baseline | ⬜ not started | schema, held-out test set, **teacher ceiling number** | `docs/phases/phase-1-task-selection.md` |
 | 2 | Teacher dataset generation | ⬜ not started | filtered train/val/test JSONL + generation cost | `docs/phases/phase-2-teacher-dataset.md` |
 | 3 | Student fine-tuning | ⬜ not started | LoRA r8 & r32 adapters + W&B runs | `docs/phases/phase-3-fine-tuning.md` |
