@@ -5,6 +5,35 @@ context → decision → why → consequence. Reference by ID (D-00N) from other
 
 ---
 
+### D-011 — CORD→receipt-v1 converter: real structure is `valid_line`, not `gt_parse`
+- **Context:** With the raw corpus on disk (`data/raw/cord/{train,dev,test}/json/*.json`, 800/100/100),
+  the assumption baked into D-010/handoffs — that CORD ships a pre-parsed `gt_parse` dict — is
+  **wrong**. Each file has a `valid_line` list of labelled spans
+  `{"words":[{"text","quad"}], "category":"menu.nm"|…, "group_id":N}`; there is **no** serialized
+  OCR text and **no** parsed gold. Both the model input and the gold must be built from `valid_line`.
+  The user pulled this converter forward into Phase 1 (it was slated for Phase 2) to unblock the pilot.
+- **Decision:** a small deterministic converter in `src/distill/dataset.py`
+  (`convert_record` → `{id, text, gold}`), driven by the thin CLI `scripts/convert_cord.py`:
+  **gold** — group primary `menu.*` spans by `group_id` (one line item each; `menu.nm`→description,
+  `cnt`→quantity, `unitprice`→unit_price, `price`→total_price), `sub_total.subtotal_price`→subtotal,
+  `sub_total.tax_price`→tax, `total.total_price`→total; validated against `receipt-v1`.
+  **text** — reconstructed from word `quad` boxes (sort top→bottom, left→right; new line when the
+  vertical gap exceeds ~0.6× median word height). **amounts** — `parse_amount` takes the *last* pure-
+  numeric, non-percentage word and normalizes mixed thousands/decimal separators. Name-less menu
+  groups are dropped (schema requires `description`); `menu.sub*` and minor categories have no slot
+  and are ignored; `vendor/date/currency` stay `null` (D-010).
+- **Why:** the data dictates it — there is no gold to copy, so we parse the labelled spans directly,
+  keeping the code minimal (plain functions, no new deps) and every gold schema-valid by construction.
+  A last-numeric-non-rate rule was the smallest heuristic that survived all the real amount spans
+  (labels carrying stray digits like `PB1 144,695`; rate spans like `TAX 10.00 % 4,964`).
+- **Consequence:** `data/cord/{train,dev,test}.jsonl` = **1000** records, all schema-valid; 0 empty
+  texts; **5** receipts genuinely have no line items (no `menu.nm`); self-scoring gold-vs-gold with
+  `CORD_SCORED_FIELDS` gives field-F1 / exact-match / validity = **1.0**. `data/` is gitignored, so
+  the JSONL is a rebuildable artifact, not committed. Known residual parse noise (~1%: a few double-
+  tax receipts and space-split thousands) is accepted, not special-cased. **Only the converter was
+  pulled forward — teacher labelling / dataset generation (the rest of Phase 2) is not started.**
+  (Phase 1, 2026-08-21)
+
 ### D-010 — CORD scoring policy: score only the fields CORD labels
 - **Context:** We commit to the **original** CORD corpus (`clovaai/cord`), not the Hugging Face
   `cord-v2` variant. CORD ships ground-truth parses for line items (`menu`: name/count/unitprice/
