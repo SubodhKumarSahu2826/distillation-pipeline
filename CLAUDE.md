@@ -165,3 +165,70 @@ Work **one phase at a time**, in order. Do not start a phase until the user says
 explicit **"What must NOT be done in this phase"** section — respect it.
 
 Current phase is always in `CURRENT_PHASE.md`.
+
+---
+
+## 9. Implementation rules (permanent — enforced every phase)
+
+> These rules are permanent and apply to every phase. They extend §4 (Complexity policy).
+
+### Code quality and simplicity
+
+1. Keep the code minimal and focused.
+2. Write only code that is actually required by the current phase.
+3. Do not generate unnecessary abstractions, wrappers, helper layers, or framework boilerplate.
+4. Prefer simple functions and straightforward control flow over complex architecture.
+5. Avoid "future-proofing" code that is not currently needed.
+6. Do not create thousands of lines of code when a small implementation is sufficient.
+7. Do not duplicate functionality that already exists.
+8. Reuse existing project components when appropriate.
+9. Every dependency must have a clear and current purpose.
+10. Every class, function, file, and dependency should be explainable in a project presentation/interview.
+11. Prefer readable code over clever code.
+12. Prefer explicit code over overly generic abstractions.
+13. Keep configuration and business logic understandable.
+14. Do not add infrastructure only because it is commonly used in AI projects.
+15. Do not add LangChain, LangGraph, Redis, databases, queues, vector databases, Docker,
+    Kubernetes, or other infrastructure unless the current phase has a specific documented
+    reason requiring it.
+16. Do not create placeholder modules for future phases.
+17. Do not implement future-phase functionality early.
+
+### Interview-readiness
+
+The entire codebase must remain easy for the developer to understand and explain during an
+interview.
+
+For every significant implementation, the developer should be able to answer:
+
+- Why does this code exist?
+- Why was this approach chosen?
+- What problem does it solve?
+- Why is this dependency required?
+- What would happen if we removed it?
+- How does it connect to the rest of the pipeline?
+
+If a piece of code cannot be justified clearly, reconsider whether it is necessary.
+
+### Implementation discipline
+
+Before writing code:
+- inspect existing code
+- reuse what already exists
+- identify the minimum required change
+
+After writing code:
+- inspect the diff
+- remove unnecessary code
+- run relevant tests
+- keep the final implementation as small as reasonably possible
+
+Do not optimize for lines of code alone. Optimize for:
+- correctness
+- simplicity
+- readability
+- maintainability
+- explainability
+
+**IMPORTANT:** A smaller codebase is preferred when it provides the same required
+functionality. Do not sacrifice correctness merely to reduce line count.
