@@ -3,6 +3,12 @@
 > Start only on **"Start Phase 6."** This produces the headline artifact: the break-even number.
 > No new model work — this is analysis on measured inputs.
 
+> **⚠️ $0 STRATEGY PIVOT (D-013, 2026-08-22).** This phase's premise — break-even of a **paid** teacher
+> API vs a self-hosted student — is disrupted: the teacher is now **open-source at $0** (D-013), so
+> `teacher_cost_per_1k` and the "rent vs own" break-even need **reframing** (e.g. cost/latency/quality
+> vs a free baseline, or a clearly-labelled illustrative paid-teacher comparison). The reframed
+> economics and models are **deliberately not decided in this pass** — placeholder only.
+
 ## Objective
 Turn the measured numbers (Phase 4 throughput/latency/cost, Phase 5 escalation rate) into a
 defensible cost model and compute the **break-even requests/day**, plus a savings curve. Do **not**

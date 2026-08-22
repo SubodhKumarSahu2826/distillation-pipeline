@@ -6,6 +6,13 @@
 
 **Phase 1 — Task selection + teacher baseline. 🟡 IN PROGRESS.**
 
+> **⚠️ $0 STRATEGY PIVOT (D-013, 2026-08-22).** The paid Anthropic/Claude teacher plan is
+> **CANCELLED** — the project must now cost **$0**. The teacher becomes an **open-source model run
+> locally / on free compute (TBD — not chosen)**. There is **no paid pilot**, no `--confirm` spend,
+> no `count_tokens`/endpoint-pricing step. The paid steps once described here are **void**; the live
+> next action is the **$0/open-source teacher strategy**. Models and the reframed economics are
+> **deliberately not decided in this pass.**
+
 Built & verified **offline** in Phase 1 so far (no money spent):
 - `src/distill/schema.py` — the output contract, `SCHEMA_VERSION = "receipt-v1"`
   (Pydantic v2, `extra="forbid"`, `parse_and_validate` / `is_valid`). **Unchanged by D-010.**
@@ -32,31 +39,34 @@ Built & verified **offline** in Phase 1 so far (no money spent):
   projected-cost and refuses `*test*.jsonl` without `--allow-test`; needs `--confirm` (+ API key)
   to spend. It reads exactly the `{id, text}` records the converter emits.
 - `config.py` teacher defaults set to the Opus 5 ceiling + labelled list prices (D-009);
-  `pydantic` promoted to a runtime dep (D-008).
+  `pydantic` promoted to a runtime dep (D-008). **(⚠️ the paid Opus 5 defaults are SUPERSEDED by
+  D-013 and now dormant/unused — no source change made this pass.)**
 - Tests: `pytest` **42 passed** (3 smoke + 10 schema + 11 evaluate + 18 dataset); `ruff check` clean.
 
 ## Next exact action
 
-**The CORD data is converted (D-011) and the test set is frozen (D-012). The ONLY remaining Phase-1
-work is the approved paid pilot to measure the teacher ceiling.** No further data-prep is needed.
+**The CORD data is converted (D-011) and the test set is frozen (D-012). The remaining Phase-1 work is
+NO LONGER a paid pilot (cancelled, D-013) — it is to define the $0/open-source teacher strategy, then
+measure the ceiling at $0.** No further data-prep is needed.
 
 1. **DONE — frozen test set (D-012).** `scripts/freeze_test_set.py` wrote `data/splits/test.jsonl`
    (100 records) + `data/splits/test.manifest.json` (100 input hashes, aggregate `872bec26…`). CORD's
    test split was internally clean, so it was frozen as-is; **9** test inputs leak into train/val —
    Phase 2 drops those *train/val* inputs (never the test anchor). Not read again until Phase 4.
-2. **Cost gate before any spend** (CLAUDE.md §3 / the approval protocol): run the free `count_tokens`
-   on real inputs from `data/cord/train.jsonl` → replace the ~700-token estimate → confirm endpoint
-   pricing (D-009) → `python scripts/run_teacher.py --input data/cord/train.jsonl --limit 50` (dry
-   run) → **present requests / tokens / cost / pilot size and WAIT for approval.**
-3. Only after approval: re-run with `--confirm` for Opus 5, then the same for `claude-haiku-4-5`
-   (D-007). Score both with `evaluate.py` **using `scored_fields=dataset.CORD_SCORED_FIELDS`** (D-010),
-   record E-001 + the teacher table in `benchmarking.md`, and the actual pilot cost in
-   `cost-analysis.md` §1b.
+2. **NEXT (a real decision session, not planning): choose the $0/open-source teacher** — an
+   open-source model that can do `receipt-v1` extraction and can run at **$0** (locally / free
+   compute). Record it as a new decision. **Nothing is chosen yet — do not assume a model.**
+3. **Then measure the ceiling at $0:** run that teacher over ~50 inputs from `data/cord/train.jsonl`,
+   score with `evaluate(..., scored_fields=dataset.CORD_SCORED_FIELDS)` (D-010), record E-001 + the
+   teacher table in `benchmarking.md`. **No `--confirm`, no API spend — the run must cost $0.** The
+   paid Claude path in `run_teacher.py` stays dormant until repointed (a later, explicit source change).
 
 ## Do NOT
 
-- **Do not make any paid teacher call without the approval protocol** (explain call, #requests,
-  tokens, cost, pilot size → wait for explicit approval). Never bulk-call without approval.
+- **Do not spend any money — the project is now $0 (D-013).** No paid teacher calls, no `--confirm`,
+  no rented GPU. The old paid-pilot approval protocol is moot because there is no paid pilot.
+- **Do not choose the teacher/student model in a planning pass** — that is a separate, explicit
+  decision session (D-013 defers it).
 - **Never** use `data/cord/test.jsonl` / `data/splits/test.jsonl` for generation/tuning — held out,
   Phase 4 only (`run_teacher.py` already refuses `*test*.jsonl` without `--allow-test`).
 - The converter is done, but **do not start the rest of Phase 2** — no teacher labelling, no
@@ -67,10 +77,10 @@ work is the approved paid pilot to measure the teacher ceiling.** No further dat
 
 ## Pre-flight for the next session
 
-1. `git log --oneline` → `dd6bcf8` on top (converter committed). **The frozen-test change is
-   uncommitted** — `src/distill/dataset.py` + `tests/test_dataset.py` modified, `scripts/freeze_test_set.py`
-   new — until the user runs the commit (sandbox denies `.git` writes, D-005). Suggested message:
-   `feat(phase-1): freeze CORD test set + input_hash leakage check (D-012)`.
+1. `git log --oneline` → `d07213e feat: freeze CORD test set` on top (D-012 committed). This
+   session's **$0-pivot doc edits are uncommitted** — hand the commit to the user (D-005; sandbox
+   denies `.git` writes). Suggested message:
+   `docs: pivot to $0/open-source strategy; cancel paid teacher (D-013)`.
 2. `.venv/bin/python -m pytest` → **42 passed**; lint via `/opt/anaconda3/bin/ruff check .` (the venv
    has no `ruff`/`pytest` console scripts — use `python -m pytest` and the anaconda `ruff` binary).
 3. `data/cord/{train,dev,test}.jsonl` is a **gitignored build artifact** — regenerate any time with
@@ -79,5 +89,5 @@ work is the approved paid pilot to measure the teacher ceiling.** No further dat
    `.venv/bin/python scripts/freeze_test_set.py` (idempotent — aggregate stays `872bec26…`; `--check`
    re-runs the leakage report without writing).
 4. Read `PROJECT_STATE.md` + this file + `docs/handoffs/latest.md`, then the Phase 1 doc.
-5. Create `.env` from `.env.example` with a real `ANTHROPIC_API_KEY` only when running the approved
-   pilot; confirm `ANTHROPIC_BASE_URL` (agentrouter) pricing first (D-009).
+5. **No `.env` / `ANTHROPIC_API_KEY` / agentrouter step** — the paid pilot is cancelled (D-013). The
+   next real step is deciding the $0/open-source teacher, not wiring a paid key.

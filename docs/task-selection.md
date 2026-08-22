@@ -144,5 +144,6 @@ touch splits refuse to open `test.jsonl` unless invoked with an explicit `--allo
   **not** label `vendor`/`date`/`currency`, so those three are excluded from the CORD headline metric
   via `dataset.CORD_SCORED_FIELDS`. *Blocked in-sandbox:* dataset download needs network beyond the
   allowed hosts.
-- 🟡 **Teacher model tier for the bulk run** — ceiling measured with Opus 5; Haiku 4.5 piloted on
-  the same inputs as the cheaper-tier candidate; final bulk tier chosen in Phase 2 (D-007).
+- 🟡 **Teacher model — now $0 / open-source (D-013).** The paid Opus 5 ceiling + Haiku 4.5 bulk-tier
+  plan (D-007) is **CANCELLED**; the teacher becomes an open-source model run at $0 (TBD, not chosen).
+  There is no paid pilot and no separate "bulk tier" to choose.

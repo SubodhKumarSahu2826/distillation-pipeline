@@ -3,6 +3,13 @@
 Master plan and hub. Links out to `architecture.md`, `task-selection.md`, the per-phase docs,
 and the living ledgers (`decisions.md`, `experiments.md`, `benchmarking.md`, `cost-analysis.md`).
 
+> **⚠️ $0 STRATEGY PIVOT (D-013, 2026-08-22).** The paid Anthropic/Claude teacher plan is
+> **CANCELLED**; the project must now cost **$0** end-to-end (teacher + GPU). The "rent a paid teacher
+> API vs own a student" framing throughout this plan — the break-even thesis (§1–§2) and the
+> "Spends money?" column (§6) — is a **placeholder pending reframe**: the teacher becomes an
+> open-source model run at $0 (TBD), and every later step must be free/local. Models and the reframed
+> economics are **deliberately not decided in this pass.**
+
 ---
 
 ## 1. Objective (the real one)
@@ -65,14 +72,14 @@ Docker optional (serving repro only). Full justification + exclusions in `docs/a
 
 | Phase | Name | Core output | Complexity | Spends money? |
 |------:|------|-------------|:---------:|:---:|
-| 0 | Foundation | repo skeleton, config, tests, logging, repro | Low | No |
-| 1 | Task selection + teacher baseline | schema, untouched test set, **teacher ceiling** | Medium | Yes (pilot: small) |
-| 2 | Teacher dataset generation | filtered train/val/test + generation cost | Medium–High | **Yes (main cash cost)** |
-| 3 | Student fine-tuning (LoRA r8 & r32) | adapters + W&B curves | High | Yes (GPU) |
-| 4 | Teacher vs student benchmark | 3-axis table + retention | Medium | Yes (GPU + some API) |
-| 5 | vLLM serving + router | endpoint + escalation rate | Medium–High | Yes (GPU) |
-| 6 | Economics + break-even | **break-even req/day** + savings curve | Low–Medium | No |
-| 7 | Finalization | README w/ measured results, repro, diagram | Low | No |
+| 0 | Foundation | repo skeleton, config, tests, logging, repro | Low | No ($0) |
+| 1 | Task selection + teacher baseline | schema, untouched test set, **teacher ceiling** | Medium | **$0** (D-013: open-source teacher, no paid pilot) |
+| 2 | Teacher dataset generation | filtered train/val/test + generation cost | Medium–High | **$0** (D-013: open-source teacher) |
+| 3 | Student fine-tuning (LoRA r8 & r32) | adapters + W&B curves | High | **$0 target** (D-013: local / free GPU) |
+| 4 | Teacher vs student benchmark | 3-axis table + retention | Medium | **$0 target** (D-013: local / free GPU) |
+| 5 | vLLM serving + router | endpoint + escalation rate | Medium–High | **$0 target** (D-013: local / free GPU) |
+| 6 | Economics + break-even | **break-even req/day** + savings curve | Low–Medium | No ($0) |
+| 7 | Finalization | README w/ measured results, repro, diagram | Low | No ($0) |
 
 Each phase is scoped to fit one Claude Code session's context. Detail per phase lives in
 `docs/phases/phase-N-*.md` and each contains: objective · prerequisites · tasks · files ·

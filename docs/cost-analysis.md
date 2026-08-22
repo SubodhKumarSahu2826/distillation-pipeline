@@ -7,37 +7,37 @@ in docs.
 
 ---
 
+> **⚠️ $0 STRATEGY PIVOT (D-013, 2026-08-22).** The paid Anthropic/Claude teacher plan is
+> **CANCELLED**; the project must now cost **$0**. Every paid-teacher figure below — the ~$0.55 Opus 5
+> pilot (§1a) and the "teacher API" rent baseline (§2–§3) — is a **void placeholder** pending a
+> $0/open-source reframe. The teacher is now an open-source model run at $0 (TBD — not chosen); there
+> is **no paid pilot** and no per-call teacher cost. Models and the reframed break-even are
+> **deliberately not decided in this pass.**
+
 ## 1. Generation cost — pilot estimate (Phase 1) → full run (Phase 2)
 
-### 1a. Pilot cost estimate (Phase 1) — estimate only, **nothing spent yet**
+### 1a. Teacher ceiling run (Phase 1) — **$0, open-source (D-013)** · *paid pilot cancelled*
 
-The pilot is the money gate: run ~50 receipts through the teacher, score against independent gold,
-then decide the bulk tier. The numbers below are **labelled assumptions** (D-009), not measurements.
+**Superseded by D-013.** The paid pilot once described here (run ~50 receipts through a paid Claude
+teacher; ~$0.55 on Opus 5; A/B Haiku 4.5) is **CANCELLED — $0 spent, never to run.** Under the $0
+constraint the ceiling is measured by running an **open-source teacher at $0** (locally / free
+compute) over the same ~50 CORD inputs and scoring vs gold. There is **no per-call teacher cost** to
+estimate and no paid-approval gate to clear.
 
-| Knob | Value (assumption) |
+_TBD (deferred to the $0-teacher decision session; no model chosen here):_
+
+| Knob | Value |
 |------|:--|
-| Pilot size | 50 receipts (`--limit 50`; may raise to 100) |
-| Mean input tokens / request | ~700 (chars÷4 heuristic; **replace with free `count_tokens` on real inputs before spend**) |
-| Assumed output tokens / request | ~300 (compact `receipt-v1` JSON) |
-| Ceiling model | `claude-opus-5` — $5 in / $25 out per Mtok (list price; confirm on endpoint) |
-| Cost-tier model | `claude-haiku-4-5` — cheaper; **confirm price on the agentrouter endpoint** before estimating |
+| Teacher cost | **$0** (open-source; local / free compute) |
+| Teacher model | _TBD — open-source, not yet chosen (D-013)_ |
+| Ceiling inputs | ~50 from `data/cord/train.jsonl`, scored with `CORD_SCORED_FIELDS` (D-010) |
+| Compute host | _TBD — must be $0 (local GPU / free tier)_ |
 
-Formula (as printed by `scripts/run_teacher.py`, which is dry-run by default):
-`cost = N · (mean_in · price_in + mean_out · price_out) / 1e6`
-
-- **Opus 5, 50 samples:** 50 · (700·5 + 300·25) / 1e6 = **~$0.55**  (100 samples ≈ **$1.10**).
-- **Haiku 4.5, 50 samples:** far lower; exact figure pending confirmed Haiku pricing on the endpoint.
-
-Method before any paid call (guardrails, CLAUDE.md §3): (1) acquire the receipts dataset;
-(2) run the free `count_tokens` on the real pilot inputs and replace the ~700 estimate;
-(3) confirm endpoint pricing; (4) re-run the dry-run to print the real projected cost;
-(5) present it for **explicit approval**; (6) only then `--confirm`.
-
-### 1b. Full-run generation cost (Phase 2) — the main cash outlay
+### 1b. Full-run generation cost (Phase 2) — **must be $0 (D-013)** *(was: the main cash outlay)*
 
 | Item | Value |
 |------|:-----:|
-| Pilot size / cost | _TBD_ (measured in the Phase-1 pilot) |
+| Teacher generation cost | **$0** — open-source teacher (D-013); no paid pilot |
 | Estimated full-run cost (from pilot) | _TBD_ |
 | **Actual full-run cost** | _TBD_ |
 | Examples kept after filtering | _TBD_ |
@@ -68,7 +68,7 @@ blended = (1 - escalation_rate) * student_cost_per_request
 ```
 (The escalated request pays for the student attempt *and* the teacher call.)
 
-## 3. Break-even (Phase 6) — the headline number
+## 3. Break-even (Phase 6) — the headline number  · ⚠️ reframe pending (D-013: the paid teacher_cost baseline is void)
 
 Self-hosting has a fixed-ish GPU spend regardless of volume; the API scales linearly. Break-even
 is where the blended self-hosted cost per day equals the teacher-only cost per day:

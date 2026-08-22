@@ -21,19 +21,18 @@ Format (mandatory):
 
 ## Planned experiments (hypotheses to fill on execution)
 
-### E-001 — Teacher baseline (ceiling) + cost-tier A/B   [Phase 1]
-- Hypothesis: the ceiling teacher (Opus 5) achieves ≥ high-80s field-F1 on the frozen receipts test
-  set → a usable ceiling; a cheaper tier (Haiku 4.5) may retain most of that F1 at a fraction of the
-  cost → good enough for bulk generation (informs Phase 2, D-007).
-- Variable: teacher model tier (**claude-opus-5** vs **claude-haiku-4-5**) on identical inputs/prompt.
-- Control: frozen test set, fixed prompt (`extract-v1`), same evaluator code path, `effort=low`.
-- Metrics to record: field-F1, schema-validity rate, exact-match, per-field accuracy, and
-  **actual pilot $** for each tier.
-- Expected: Opus 5 high F1 (usable ceiling); Haiku 4.5 close behind. If the ceiling F1 is **not**
-  high, **stop and reconsider the task** (documented failure mode) rather than proceed to tuning.
-- Status: **not yet run** — schema, evaluator, teacher client and the dry-run cost gate are built &
-  tested offline; blocked on acquiring the dataset + building the frozen test set, then explicit
-  pilot approval (paid). Estimate ~$0.55 for a 50-sample Opus 5 pilot (see `cost-analysis.md` §1a).
+### E-001 — Teacher baseline (ceiling) at $0   [Phase 1]  · ⚠️ REFRAMED by D-013
+- **D-013 pivot:** the original paid A/B (Opus 5 ceiling vs Haiku 4.5 cost-tier, D-007) is
+  **cancelled** — no paid teacher, no ~$0.55 pilot. Reframed to a single **$0 / open-source** teacher
+  ceiling; the model is **TBD (not chosen)**.
+- Hypothesis: an open-source teacher run at $0 achieves a usably high field-F1 on the frozen receipts
+  test set → a usable ceiling. If it does **not**, **stop and reconsider** (documented failure mode).
+- Variable: teacher model (**open-source, TBD**) — no paid cost tier anymore.
+- Control: frozen test set, fixed extraction prompt, same evaluator code path.
+- Metrics to record: field-F1, schema-validity rate, exact-match, per-field accuracy. **Teacher $ = 0**
+  (no per-call cost to record).
+- Status: **not yet run** — schema / evaluator / converter / frozen-test built & tested offline; now
+  blocked on the **$0/open-source teacher decision** (D-013), not on paid-pilot approval.
 - Actual: _TBD_
 - Conclusion: _TBD_
 

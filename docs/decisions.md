@@ -5,6 +5,31 @@ context → decision → why → consequence. Reference by ID (D-00N) from other
 
 ---
 
+### D-013 — $0 hard constraint: cancel the paid Claude teacher; pivot to an open-source/free strategy (TBD)
+- **Context:** The economic premise so far was "rent a paid frontier teacher (Claude API) now,
+  prove a self-hosted student is cheaper at scale." That plan is **cancelled.** A new, overriding
+  constraint applies: **the entire project must cost $0** — no paid teacher API calls, no paid
+  pilot, no rented-GPU spend. This voids the paid-teacher assumptions in D-007 (Opus 5 / Haiku 4.5
+  tiers) and D-009 (Opus 5 list pricing / agentrouter), and qualifies D-006's Anthropic-network note.
+- **Decision:** pivot to a **$0 / open-source strategy.** The teacher becomes an open-source model
+  run locally or on free compute; every later paid step (bulk generation, GPU training, serving)
+  must likewise be $0 (local / free-tier). **This pass only records the constraint and marks the old
+  paid assumptions as clearly-labelled void placeholders. It does NOT choose the teacher model, the
+  student model, or the reframed economics baseline, and makes no source-code or architectural
+  changes.** Concrete model selection and the reframed break-even are deferred to a later explicit
+  decision.
+- **Why:** the paid plan is no longer authorized; continuing to plan around Claude API pricing would
+  make every cost/break-even number in the repo dishonest. Recording the pivot as a single anchor
+  decision — referenced from the control files and each affected doc — keeps the repo (the project's
+  memory) internally consistent without prematurely committing to models.
+- **Consequence:** **supersedes D-007 and D-009; qualifies D-006.** The paid pilot (~$0.55 Opus 5,
+  D-009 / cost-analysis §1a) is **cancelled — $0 spent, never to be run.** E-001 is reframed to a
+  $0/open-source teacher ceiling (model TBD). The API-based break-even framing (cost-analysis §2–3,
+  project-plan, phase-6) is a **placeholder pending reframe.** The built teacher client's paid
+  `extract()` path (`src/distill/teacher.py`) is left **untouched but dormant** — no source changes
+  in this pass. The offline schema / evaluator / CORD converter / frozen-test work (D-010–D-012) is
+  unaffected and still valid. (Phase 1, 2026-08-22)
+
 ### D-012 — Freeze CORD's test split as-is; fix cross-split leakage on the train/val side
 - **Context:** Phase 1's next action was building the frozen test set. CORD ships its own
   100-record held-out **test** split (`data/cord/test.jsonl`, D-011). Before adopting it as the
@@ -88,7 +113,7 @@ context → decision → why → consequence. Reference by ID (D-00N) from other
   fields not covered by CORD gold are documented in `dataset.CORD_UNSCORED_FIELDS`.
   (Phase 1, 2026-08-21)
 
-### D-009 — Teacher pricing is a labelled assumption pending endpoint confirmation
+### D-009 — Teacher pricing is a labelled assumption pending endpoint confirmation  · ⚠️ SUPERSEDED by D-013 ($0 pivot: no paid teacher, no pricing)
 - **Context:** `ANTHROPIC_BASE_URL=https://agentrouter.org/` is a third-party router; real
   per-token pricing there may differ from Anthropic list prices.
 - **Decision:** seed `config.py` with **Opus 5 list prices** ($5 in / $25 out per Mtok) as an
@@ -110,7 +135,7 @@ context → decision → why → consequence. Reference by ID (D-00N) from other
   (`anthropic` imported lazily only on a paid call). Updates D-004's "zero runtime deps."
   (Phase 1, 2026-08-21)
 
-### D-007 — Teacher tiers: Opus 5 ceiling + Haiku 4.5 cost-tier pilot
+### D-007 — Teacher tiers: Opus 5 ceiling + Haiku 4.5 cost-tier pilot  · ⚠️ SUPERSEDED by D-013 ($0 pivot: paid Claude teacher cancelled)
 - **Context:** Phase 1 measures the teacher *ceiling*; Phase 2 must pick the *cheapest* teacher
   that still clears the quality bar for bulk labelling. `task-selection.md` left the bulk tier open.
 - **Decision:** measure the ceiling with **claude-opus-5** (config default); in the same pilot,

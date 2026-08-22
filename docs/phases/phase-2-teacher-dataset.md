@@ -1,7 +1,12 @@
 # Phase 2 — Teacher Dataset Generation
 
-> Start only on **"Start Phase 2."** This is the **main cash cost** of the project. Estimate,
-> approve, then run. Put the actual number in the docs.
+> Start only on **"Start Phase 2."** ~~This is the **main cash cost** of the project.~~
+
+> **⚠️ $0 STRATEGY PIVOT (D-013, 2026-08-22).** The paid Claude teacher is **cancelled** — this phase
+> must now cost **$0**. Generation runs an **open-source teacher at $0** (TBD — not chosen); there is
+> **no cash cost**, no "approved cost estimate" gate, and no paid `--confirm`. The prerequisite
+> "approved generation cost estimate" is replaced by "confirmed $0 open-source teacher". The
+> filter / dedup / split logic is unaffected. Do not choose the model in a planning pass.
 
 ## Objective
 Produce a high-quality, schema-valid, deduplicated training corpus by running the teacher over

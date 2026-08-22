@@ -6,69 +6,59 @@
 ---
 
 ## Session date
-2026-08-22 — **Phase 1 (Task selection + teacher baseline) — IN PROGRESS.** Recovery + verification
-session. The prior session built the **frozen test set (D-012)** but died on a Claude Desktop
-API/streaming error before updating the control docs. This session verified the on-disk state and
-brought the docs back in sync. Offline, **$0 spent**, no API call.
+2026-08-22 — **Phase 1 — IN PROGRESS.** **$0 strategy-pivot / planning-doc realignment session.**
+The user cancelled the paid Anthropic/Claude teacher plan: **the entire project must now cost $0.**
+No code, data, models, or APIs were touched — **docs only**, offline, **$0 spent**.
 
 ## What happened this session
-No code was written or changed — this was a state-recovery pass. Findings:
-- The **CORD converter (D-011) is now committed** at `dd6bcf8` (`feat(phase-1): add deterministic
-  CORD converter`) — the docs previously said it was uncommitted at `b5f8052`; that was stale.
-- The **uncommitted** working tree is now the **frozen-test-set** work from the prior session:
-  `src/distill/dataset.py` + `tests/test_dataset.py` modified, `scripts/freeze_test_set.py` new.
-- Verified the frozen artifact and recorded the leakage finding as **D-012** (it was not yet in
-  `docs/decisions.md`). Updated `PROJECT_STATE.md`, `CURRENT_PHASE.md`, and this handoff.
+Recorded a new hard constraint and realigned the planning/state docs to it. **No teacher/student
+model was chosen; no economics were re-derived; no source or architecture was changed** (all
+deliberately deferred).
+- **New anchor decision `D-013`** in `docs/decisions.md`: $0 hard constraint; paid Claude teacher
+  **cancelled**; pivot to an open-source/free ($0) strategy (TBD). It **supersedes D-007** (Opus 5 /
+  Haiku 4.5 tiers) **and D-009** (paid pricing), and qualifies D-006's Anthropic-network note. D-007
+  and D-009 headers now carry a `⚠️ SUPERSEDED by D-013` flag.
+- **Control files** (`PROJECT_STATE.md`, `CURRENT_PHASE.md`): status/next-action now reflect $0. The
+  next action is no longer a paid pilot — it is to **decide the $0/open-source teacher, then measure
+  the ceiling at $0**. Removed the `.env`/`ANTHROPIC_API_KEY`/agentrouter/`count_tokens` pre-flight.
+- **Paid figures neutralized as clearly-marked $0 placeholders** in `docs/cost-analysis.md` (§1a
+  ~$0.55 Opus/Haiku pilot), `docs/experiments.md` (E-001 A/B), `docs/project-plan.md` (the
+  "Spends money?" column + break-even framing), `docs/task-selection.md` (open teacher-tier line),
+  and phase docs `phase-1`, `phase-2`, `phase-6` (banners).
+- **Corrected stale state:** the D-012 frozen-test work is in fact **committed** at `d07213e` (the
+  prior docs still said "uncommitted at `dd6bcf8`").
 
-## Verification results (all green)
-- `git status`: 2 modified (`dataset.py`, `test_dataset.py`) + 1 untracked (`scripts/freeze_test_set.py`).
-- **Frozen test set exists:** `data/splits/test.jsonl` = **100** records; `data/splits/test.manifest.json`
-  = **100** unique input hashes + aggregate `872bec26…`, `schema_version=receipt-v1`,
-  recipe `sha256(casefold(collapse_whitespace(text)))`.
-- **Leakage (`freeze_test_set.py --check`):** test internally clean (100 unique, 0 dup, 0 empty);
-  **test ∩ train = 8, test ∩ dev = 2 → 9 distinct** test inputs leak into train/val. Also surfaced
-  32 intra-train + 1 intra-dev duplicates and 12 train∩dev overlaps (all deferred to Phase-2 dedup).
-- `.venv/bin/python -m pytest` → **42 passed** (was 40; +2 `input_hash` tests). `ruff check .` → clean.
-- **Raw CORD unchanged:** 2004 files, tree sha256 `433be823fd026f8f…` = the D-011 baseline `433be82…`;
-  nothing under `data/raw/cord/` modified after the freeze (mtimes all predate it).
+## Verification results
+- **No source changed:** edits are confined to `*.md` (docs + 3 control files). `src/`, `tests/`,
+  `scripts/`, `configs/`, `config.py` untouched — verify with `git diff --stat` (all `.md`).
+- Tests/lint not re-run (no code changed); last known green: `pytest` **42 passed**, `ruff` clean.
+- `git status` before this session: clean tree except untracked `.claude/`. HEAD `d07213e`.
 
 ## State of the repo
-- 🟡 Phase 1 in progress. HEAD `dd6bcf8`. Frozen-test code **UNCOMMITTED** — hand the commit to the
-  user (D-005; sandbox denies `.git` writes). Suggested message:
-  `feat(phase-1): freeze CORD test set + input_hash leakage check (D-012)`.
-- **Data:** `data/cord/{train,dev,test}.jsonl` = 1000 records (D-011, gitignored, rebuildable).
-  `data/splits/test.jsonl` (100) + `test.manifest.json` = the frozen anchor (D-012, gitignored,
-  rebuildable via `scripts/freeze_test_set.py`, idempotent).
-- **$0 spent.** Pilot still **estimated** ~$0.55 (50 × Opus 5, labelled assumption), not yet run.
+- 🟡 Phase 1 in progress. HEAD `d07213e`. **This session's doc edits are UNCOMMITTED** — hand the
+  commit to the user (D-005; sandbox denies `.git` writes). Suggested message:
+  `docs: pivot to $0/open-source strategy; cancel paid teacher (D-013)`.
+- **Offline assets unchanged and still valid:** `receipt-v1` schema, evaluator, CORD converter
+  (D-011), frozen test set (D-012, `data/splits/test.jsonl` = 100, aggregate `872bec26…`).
+- **$0 spent; the project is now bound to stay at $0.** The ~$0.55 Opus 5 pilot will never run.
 
 ## Exact next action
-Phase-1 data prep is **complete** (D-011 + D-012). The only remaining Phase-1 work is the **approved
-paid pilot** to measure the teacher ceiling:
-1. **Cost gate first** (CLAUDE.md §3): free `count_tokens` on real inputs from `data/cord/train.jsonl`
-   → replace the ~700-token estimate → confirm endpoint pricing (D-009) → dry-run
-   `python scripts/run_teacher.py --input data/cord/train.jsonl --limit 50` →
-   **present requests / tokens / cost / pilot size and WAIT for explicit approval.**
-2. After approval: `--confirm` pilot for Opus 5, then Haiku 4.5 (D-007); **score with
-   `evaluate(..., scored_fields=dataset.CORD_SCORED_FIELDS)`** (D-010); record E-001 +
-   `benchmarking.md` teacher table + actual cost in `cost-analysis.md` §1b.
-
-## How the next session verifies it's on track
-- `.venv/bin/python -m pytest` → **42 passed**; `/opt/anaconda3/bin/ruff check .` clean.
-- `.venv/bin/python scripts/freeze_test_set.py --check` reprints the split summary + leakage
-  (test: 100 / 100 unique / 0 dup / 0 empty; 9 test inputs in train/val).
-- `data/splits/test.jsonl` has 100 lines; `test.manifest.json` aggregate is `872bec26…`.
+1. **Decide the $0/open-source teacher (a real decision session, not a planning pass):** pick an
+   open-source model that can perform `receipt-v1` extraction and can be run at **$0** (locally or on
+   free compute); record it as a new decision (supersedes the model half of D-006/D-007). **Do not
+   assume a model in planning.**
+2. **Measure the ceiling at $0:** run that teacher over ~50 inputs from `data/cord/train.jsonl`, score
+   with `evaluate(..., scored_fields=dataset.CORD_SCORED_FIELDS)` (D-010), record E-001 + the teacher
+   table in `benchmarking.md`. **No `--confirm`, no API spend.** Repointing `run_teacher.py` off the
+   dormant paid Claude path is a later, explicit **source** change — out of scope for a planning pass.
 
 ## Watch-outs handed forward
-- **Every git commit is user-run** (D-005). Venv has **no `ruff`/`pytest` console scripts** — use
+- **$0 is now a hard constraint (D-013)** — no paid teacher, no `--confirm`, no rented GPU, at any
+  phase. Every later "Spends money?" assumption in the older docs is void unless it can be done free.
+- **Models are NOT chosen** — teacher and student are both open TBD; don't infer one from old docs.
+- **Every git commit is user-run** (D-005). Venv has no `ruff`/`pytest` console scripts — use
   `.venv/bin/python -m pytest` and the anaconda `ruff` at `/opt/anaconda3/bin/ruff`.
-- **Do not mutate or re-shuffle the frozen test set** — it is the measurement anchor (D-012). Leakage
-  is fixed on the **train/val** side in Phase 2 (drop any train/val input whose `input_hash` is in
-  `test.manifest.json`), never by touching `data/splits/test.jsonl`.
-- **Never read `data/splits/test.jsonl` / `data/cord/test.jsonl`** until Phase 4; `run_teacher.py`
-  refuses `*test*.jsonl` without `--allow-test`.
-- **`data/raw/cord/` is read-only input** — verified sha256 `433be82…` unchanged.
-- **Use `scored_fields=CORD_SCORED_FIELDS` for every CORD score** (D-010) or vendor/date/currency get
-  silently penalized.
-- **Pricing is a labelled assumption** (D-009) — confirm on the endpoint + run free `count_tokens`
-  before spend. The pilot is the **first money step**: pilot 50, get explicit approval on the estimate.
-- **Do not start the rest of Phase 2** (teacher labelling / full training set) or any later phase.
+- **Do not mutate the frozen test set** (D-012); never read `data/splits/test.jsonl` /
+  `data/cord/test.jsonl` until Phase 4. **`data/raw/cord/` is read-only.**
+- **The teacher client's paid `extract()` path is dormant, not deleted** — left untouched this pass.
+- **Do not start Phase 2+** (bulk generation / training / serving / economics).

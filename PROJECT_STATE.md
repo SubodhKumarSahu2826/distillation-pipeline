@@ -5,16 +5,18 @@
 
 **Project:** Fine-Tuning Model Distillation Pipeline
 **Task distilled:** structured extraction — document → fixed JSON schema (see `docs/task-selection.md`)
-**Last updated:** 2026-08-22 (Phase 1 — task selection + teacher baseline, in progress; frozen test set built & leakage-checked D-012; converter now committed at `dd6bcf8`)
+**Last updated:** 2026-08-22 (Phase 1 in progress; **$0 STRATEGY PIVOT — D-013**: the paid Claude teacher plan is cancelled, the project must now cost **$0**)
 **Overall status:** 🟡 PHASE 1 IN PROGRESS — schema (`receipt-v1`), deterministic evaluator (with a
 dataset-specific **scored-field policy**), teacher client, and a dry-run cost gate are built & tested
 offline. The deterministic **CORD→`receipt-v1` converter** (D-011) produces
 `data/cord/{train,dev,test}.jsonl` — **1000** schema-valid gold records — and CORD's 100-record test
-split is now **frozen** at `data/splits/test.jsonl` + a hash manifest (D-012). `pytest` **42 passed**,
+split is **frozen** at `data/splits/test.jsonl` + a hash manifest (D-012, committed `d07213e`). `pytest` **42 passed**,
 `ruff` clean.
-**Not yet done:** measure the teacher baseline (needs an approved **paid** pilot). The frozen-test work
-(`input_hash` + `scripts/freeze_test_set.py` + 2 tests) is **uncommitted** — hand the commit to the
-user (D-005; HEAD is `dd6bcf8`). **$0 spent** (pilot estimated ~$0.55, unspent).
+**⚠️ $0 pivot (D-013):** the old paid teacher plan — Opus 5 ceiling + Haiku 4.5 bulk tier (D-007),
+agentrouter list pricing (D-009), the ~$0.55 pilot — is **CANCELLED**. The teacher is now an
+**open-source model run at $0 (TBD — not chosen this pass)**; no paid pilot, no per-call cost.
+**Not yet done:** define the concrete $0/open-source teacher strategy, then measure the ceiling at $0.
+Model choice + reframed economics are **deliberately deferred**. **$0 spent; project now bound to $0.**
 
 ---
 
@@ -50,9 +52,9 @@ Legend: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | Pilot runner | `scripts/run_teacher.py` | Phase 1 | ✅ dry-run cost gate; `--confirm` + `--allow-test` guards |
 | Held-out test set | `data/splits/test.jsonl` | Phase 1 | ✅ 100 frozen CORD test records (D-012); **do not touch until Phase 4** |
 | Frozen-test manifest | `data/splits/test.manifest.json` | Phase 1 | ✅ 100 input hashes + aggregate `872bec26…`; Phase 2 drops train/val inputs colliding with these |
-| Teacher baseline | `docs/benchmarking.md` §teacher | Phase 1 | ⬜ TBD — needs approved pilot |
+| Teacher baseline | `docs/benchmarking.md` §teacher | Phase 1 | ⬜ TBD — $0/open-source teacher, model TBD (D-013) |
 | Train/val splits | `data/splits/{train,val}.jsonl` | Phase 2 | |
-| Generation cost | `docs/cost-analysis.md` §generation | Phase 2 | actual $ spent |
+| Generation cost | `docs/cost-analysis.md` §generation | Phase 2 | must be $0 (D-013) |
 | Adapters | `models/lora-r8/`, `models/lora-r32/` | Phase 3 | |
 | Benchmark table | `docs/benchmarking.md` §final | Phase 4 | |
 | Router | `src/distill/router.py` | Phase 5 | escalation rate recorded |
@@ -64,28 +66,31 @@ Legend: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 ## Key decisions (pointer)
 
 Full log: `docs/decisions.md`. Most consequential so far:
+- **D-013** ⚠️ **$0 hard constraint** — paid Claude teacher plan **cancelled**; pivot to an open-source/free ($0) strategy; teacher/student models **not yet chosen**; supersedes D-007 & D-009. *Phase 1.*
 - **D-001** Task = structured extraction (doc → fixed JSON). *Planning.*
 - **D-002** Project lives at `AI Projects/distillation-pipeline/`, own git repo. *Planning.*
 - **D-003** Deterministic eval (field-F1 + schema-validity) → **no LLM-judge / no Project-4 dependency.** *Planning.*
 - **D-004** Phase 0 has **zero required runtime deps**; heavy deps in optional extras; `.env` wiring deferred to Phase 1. *Phase 0.*
 - **D-005** Sandbox blocks `.git` writes in the workspace → `git init` + first commit is a user-run step. *Phase 0.*
 - **D-006** Doc type = **receipts** (dataset candidate **CORD**, fallback SROIE); final only after the pilot. Schema locked as `receipt-v1`. *Phase 1.*
-- **D-007** Teacher tiers: measure ceiling with **Opus 5**; A/B **Haiku 4.5** as the cheaper bulk-generation tier (locked in Phase 2). *Phase 1.*
+- **D-007** Teacher tiers: measure ceiling with **Opus 5**; A/B **Haiku 4.5** as the cheaper bulk-generation tier (locked in Phase 2). *Phase 1.* **⚠️ SUPERSEDED by D-013 ($0 pivot).**
 - **D-008** `pydantic>=2` promoted to a required runtime dep (schema is core); updates D-004. *Phase 1.*
-- **D-009** Teacher pricing in `config.py` is a **labelled assumption** (Opus 5 list price); confirm on the agentrouter endpoint + `count_tokens` before any spend. *Phase 1.*
+- **D-009** Teacher pricing in `config.py` is a **labelled assumption** (Opus 5 list price); confirm on the agentrouter endpoint + `count_tokens` before any spend. *Phase 1.* **⚠️ SUPERSEDED by D-013 ($0 pivot — no paid teacher).**
 - **D-010** CORD scoring policy: use original `clovaai/cord`; score **only** CORD-labelled fields (`subtotal/tax/total/line_items`), **exclude** `vendor/date/currency` from the headline metric via a general `scored_fields` allow-list (`dataset.CORD_SCORED_FIELDS`). Schema unchanged. *Phase 1.*
 - **D-011** CORD gold lives in `valid_line` word+`category` spans (**no** `gt_parse`); a small deterministic converter builds `{id,text,gold}` (gold from `menu.*`/`sub_total.*`/`total.*` spans, text reconstructed from `quad` boxes). Converter pulled forward from Phase 2; teacher labelling not started. *Phase 1.*
 - **D-012** Freeze CORD's test split as-is → `data/splits/test.jsonl` + hash manifest; found **9** test inputs leaking into train/val — fixed on the **train/val** side in Phase 2, never the test anchor. *Phase 1.*
 
 ## Open questions (resolve in the phase that needs them)
 
-- Confirm receipts/CORD as final (vs SROIE) + pick the bulk teacher tier — both gated on the Phase-1
-  pilot. CORD is **on disk, converted** (D-011), and its test split is **frozen** (D-012); CORD
-  **scoring** policy is resolved (D-010). What remains is clearing the **paid** pilot (blocked on
-  explicit cost approval, not on data) and measuring the teacher ceiling.
-- GPU tier for training vs serving — locked in Phase 3 / Phase 5 from measured memory + throughput.
+- **$0/open-source teacher strategy (D-013): choose the open-source teacher model + how to run it at
+  $0 (local / free compute).** This replaces the cancelled paid pilot. CORD is **on disk, converted**
+  (D-011), its test split **frozen** (D-012), scoring policy resolved (D-010) — the data is ready;
+  only the $0 teacher is undecided. (Do not pick the model in a planning pass.)
+- Confirm receipts/CORD as final (vs SROIE) — was gated on the pilot; now gated on the $0 teacher
+  ceiling instead.
+- GPU tier for training vs serving — **must also be $0** (D-013); locked in Phase 3 / Phase 5.
 
 ## Known costs incurred to date
 
-$0.00 — no paid API/GPU calls. Phase-1 pilot is **estimated** ~$0.55 (50 × Opus 5, labelled
-assumption); not yet run or approved.
+$0.00 — no paid API/GPU calls. **The ~$0.55 Opus 5 pilot is CANCELLED (D-013); it will never run.**
+The project is now bound to a **$0 total** budget (open-source teacher + free/local compute, TBD).

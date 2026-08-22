@@ -4,6 +4,13 @@
 > phase locks the concrete instantiation, builds the schema + frozen test set, and measures the
 > **teacher ceiling** — the single most important number for every later comparison.
 
+> **⚠️ $0 STRATEGY PIVOT (D-013, 2026-08-22).** The paid Claude teacher below is **cancelled** — the
+> project must cost **$0**. Prereq `ANTHROPIC_API_KEY`, the "Claude call" client, the paid **PILOT
+> (cost gate)** in Task 5, and the "pilot cost" acceptance criteria are **void**: the teacher is now
+> an **open-source model run at $0** (TBD — not chosen) and the ceiling is measured at $0 with no
+> approval gate. Schema / frozen-test / evaluator work is unaffected. Do not choose the model in a
+> planning pass.
+
 ## Objective
 Finalize the schema, acquire real inputs, build a **frozen, uncontaminated test set** with gold
 labels, and honestly measure teacher quality on it. That number is the ceiling.
