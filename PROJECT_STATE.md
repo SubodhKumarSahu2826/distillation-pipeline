@@ -5,15 +5,16 @@
 
 **Project:** Fine-Tuning Model Distillation Pipeline
 **Task distilled:** structured extraction — document → fixed JSON schema (see `docs/task-selection.md`)
-**Last updated:** 2026-08-21 (Phase 1 — task selection + teacher baseline, in progress; CORD scoring policy resolved D-010; deterministic CORD→`receipt-v1` converter built & verified D-011)
+**Last updated:** 2026-08-22 (Phase 1 — task selection + teacher baseline, in progress; frozen test set built & leakage-checked D-012; converter now committed at `dd6bcf8`)
 **Overall status:** 🟡 PHASE 1 IN PROGRESS — schema (`receipt-v1`), deterministic evaluator (with a
 dataset-specific **scored-field policy**), teacher client, and a dry-run cost gate are built & tested
-offline. The raw CORD corpus is on disk and the deterministic **CORD→`receipt-v1` converter** (D-011)
-now produces `data/cord/{train,dev,test}.jsonl` — **1000** schema-valid gold records (`pytest`
-**40 passed**, `ruff` clean).
-**Not yet done:** build the frozen test set and measure the teacher baseline (needs an approved
-**paid** pilot). Converter work (this session) is **uncommitted** — hand the commit to the user
-(D-005; HEAD is `b5f8052`). **$0 spent** (pilot estimated ~$0.55, unspent).
+offline. The deterministic **CORD→`receipt-v1` converter** (D-011) produces
+`data/cord/{train,dev,test}.jsonl` — **1000** schema-valid gold records — and CORD's 100-record test
+split is now **frozen** at `data/splits/test.jsonl` + a hash manifest (D-012). `pytest` **42 passed**,
+`ruff` clean.
+**Not yet done:** measure the teacher baseline (needs an approved **paid** pilot). The frozen-test work
+(`input_hash` + `scripts/freeze_test_set.py` + 2 tests) is **uncommitted** — hand the commit to the
+user (D-005; HEAD is `dd6bcf8`). **$0 spent** (pilot estimated ~$0.55, unspent).
 
 ---
 
@@ -23,7 +24,7 @@ now produces `data/cord/{train,dev,test}.jsonl` — **1000** schema-valid gold r
 |------:|------|--------|-----------|-----|
 | — | Planning | ✅ done | this doc set | `docs/project-plan.md` |
 | 0 | Foundation | ✅ done | repo skeleton, config, logging, smoke tests (commit `4b2413a`) | `docs/phases/phase-0-foundation.md` |
-| 1 | Task selection + teacher baseline | 🟡 in progress | schema ✅, evaluator ✅, teacher client ✅ (dry-run gate), CORD converter ✅ (pulled forward, D-011); test set + ceiling number pending | `docs/phases/phase-1-task-selection.md` |
+| 1 | Task selection + teacher baseline | 🟡 in progress | schema ✅, evaluator ✅, teacher client ✅ (dry-run gate), CORD converter ✅ (D-011), frozen test set ✅ (D-012); ceiling number pending | `docs/phases/phase-1-task-selection.md` |
 | 2 | Teacher dataset generation | ⬜ not started | filtered train/val/test JSONL + generation cost | CORD→`receipt-v1` converter already built early (D-011); teacher labelling not started — `docs/phases/phase-2-teacher-dataset.md` |
 | 3 | Student fine-tuning | ⬜ not started | LoRA r8 & r32 adapters + W&B runs | `docs/phases/phase-3-fine-tuning.md` |
 | 4 | Teacher vs student benchmark | ⬜ not started | 3-axis table + quality retention | `docs/phases/phase-4-benchmarking.md` |
@@ -41,12 +42,14 @@ Legend: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 |----------|------|-------------|-------|
 | Output schema | `src/distill/schema.py` | Phase 1 | ✅ `receipt-v1` Pydantic contract + parse/validate (unchanged by D-010) |
 | Evaluator | `src/distill/evaluate.py` | Phase 1 | ✅ field-F1 / schema-validity / exact-match / per-field; optional `scored_fields` allow-list (D-010) |
-| Dataset policy + converter | `src/distill/dataset.py` | Phase 1 | ✅ `CORD_SCORED_FIELDS` (D-010) + deterministic CORD→`receipt-v1` converter `convert_record`/`build_gold`/`build_text`/`parse_amount` (D-011) |
+| Dataset policy + converter | `src/distill/dataset.py` | Phase 1 | ✅ `CORD_SCORED_FIELDS` (D-010) + deterministic CORD→`receipt-v1` converter `convert_record`/`build_gold`/`build_text`/`parse_amount` (D-011) + `input_hash` (D-012) |
 | CORD conversion CLI | `scripts/convert_cord.py` | Phase 1 | ✅ reads `data/raw/cord/*/json/*.json` → writes `data/cord/{train,dev,test}.jsonl` (offline, $0) |
+| Frozen-test CLI | `scripts/freeze_test_set.py` | Phase 1 | ✅ freezes `data/cord/test.jsonl` → `data/splits/test.jsonl` + manifest; cross-split leakage check (D-012); offline, $0 |
 | Converted CORD gold | `data/cord/{train,dev,test}.jsonl` | Phase 1 | ✅ 800/100/100 = **1000** schema-valid `{id,text,gold}` records (gitignored build artifact; rebuild via the CLI) |
 | Teacher client | `src/distill/teacher.py` | Phase 1 | ✅ prompt `extract-v1`; token/cost capture (lazy anthropic) |
 | Pilot runner | `scripts/run_teacher.py` | Phase 1 | ✅ dry-run cost gate; `--confirm` + `--allow-test` guards |
-| Held-out test set | `data/splits/test.jsonl` | Phase 1 | ⬜ not built — **do not touch until Phase 4** |
+| Held-out test set | `data/splits/test.jsonl` | Phase 1 | ✅ 100 frozen CORD test records (D-012); **do not touch until Phase 4** |
+| Frozen-test manifest | `data/splits/test.manifest.json` | Phase 1 | ✅ 100 input hashes + aggregate `872bec26…`; Phase 2 drops train/val inputs colliding with these |
 | Teacher baseline | `docs/benchmarking.md` §teacher | Phase 1 | ⬜ TBD — needs approved pilot |
 | Train/val splits | `data/splits/{train,val}.jsonl` | Phase 2 | |
 | Generation cost | `docs/cost-analysis.md` §generation | Phase 2 | actual $ spent |
@@ -72,13 +75,14 @@ Full log: `docs/decisions.md`. Most consequential so far:
 - **D-009** Teacher pricing in `config.py` is a **labelled assumption** (Opus 5 list price); confirm on the agentrouter endpoint + `count_tokens` before any spend. *Phase 1.*
 - **D-010** CORD scoring policy: use original `clovaai/cord`; score **only** CORD-labelled fields (`subtotal/tax/total/line_items`), **exclude** `vendor/date/currency` from the headline metric via a general `scored_fields` allow-list (`dataset.CORD_SCORED_FIELDS`). Schema unchanged. *Phase 1.*
 - **D-011** CORD gold lives in `valid_line` word+`category` spans (**no** `gt_parse`); a small deterministic converter builds `{id,text,gold}` (gold from `menu.*`/`sub_total.*`/`total.*` spans, text reconstructed from `quad` boxes). Converter pulled forward from Phase 2; teacher labelling not started. *Phase 1.*
+- **D-012** Freeze CORD's test split as-is → `data/splits/test.jsonl` + hash manifest; found **9** test inputs leaking into train/val — fixed on the **train/val** side in Phase 2, never the test anchor. *Phase 1.*
 
 ## Open questions (resolve in the phase that needs them)
 
 - Confirm receipts/CORD as final (vs SROIE) + pick the bulk teacher tier — both gated on the Phase-1
-  pilot. The raw CORD corpus is now **on disk and converted** to `data/cord/*.jsonl` (D-011); CORD
-  **scoring** policy is resolved (D-010). What remains is building the frozen test set and clearing
-  the **paid** pilot (still blocked on explicit cost approval, not on data).
+  pilot. CORD is **on disk, converted** (D-011), and its test split is **frozen** (D-012); CORD
+  **scoring** policy is resolved (D-010). What remains is clearing the **paid** pilot (blocked on
+  explicit cost approval, not on data) and measuring the teacher ceiling.
 - GPU tier for training vs serving — locked in Phase 3 / Phase 5 from measured memory + throughput.
 
 ## Known costs incurred to date

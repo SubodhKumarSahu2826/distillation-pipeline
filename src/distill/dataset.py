@@ -39,6 +39,7 @@ full ``receipt-v1`` contract.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import statistics
 
@@ -50,6 +51,25 @@ CORD_SCORED_FIELDS: frozenset[str] = frozenset({"subtotal", "tax", "total", "lin
 # Excluded from CORD scoring: CORD has no ground truth for these (see the module docstring).
 # The model is still asked to extract them; we simply do not score their values on CORD.
 CORD_UNSCORED_FIELDS: frozenset[str] = frozenset({"vendor", "date", "currency"})
+
+
+# --- input hashing (leakage-safe splitting / dedup) ------------------------------
+
+_WHITESPACE = re.compile(r"\s+")
+
+
+def input_hash(text: str) -> str:
+    """Stable content hash of a record's **input text**, for leakage and dedup checks.
+
+    Normalizes away cosmetic OCR-text differences — surrounding space, internal
+    whitespace runs, and case — so that byte-for-byte or near-identical receipts collide,
+    then hashes with SHA-256. Two records sharing an ``input_hash`` share an input and must
+    never straddle the train/val/test boundary. Used to freeze the test set (record its
+    input hashes) and, in Phase 2, to drop any train/val input that collides with it.
+    """
+    normalized = _WHITESPACE.sub(" ", text.strip()).casefold()
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
 
 
 # --- CORD → receipt-v1 conversion ------------------------------------------------

@@ -5,6 +5,34 @@ context → decision → why → consequence. Reference by ID (D-00N) from other
 
 ---
 
+### D-012 — Freeze CORD's test split as-is; fix cross-split leakage on the train/val side
+- **Context:** Phase 1's next action was building the frozen test set. CORD ships its own
+  100-record held-out **test** split (`data/cord/test.jsonl`, D-011). Before adopting it as the
+  project's measurement anchor we had to decide freeze-as-is vs. re-shuffle, and check it for
+  intra-split duplicates and — critically — **cross-split input leakage** (a test input that also
+  appears in train/val would inflate the Phase-4 teacher-vs-student comparison).
+- **Decision:** freeze CORD's test split **as-is** into `data/splits/test.jsonl` and write a
+  sibling manifest `data/splits/test.manifest.json` recording each record's **normalized input
+  hash** (`sha256(casefold(collapse_whitespace(text)))`, via a new `dataset.input_hash()`), the
+  100-hash list, and an aggregate hash. Any cross-split leakage is fixed later on the **train/val**
+  side (Phase 2 drops any train/val input whose hash is in this manifest) — **never** by mutating
+  the test set. Added `scripts/freeze_test_set.py` (offline, `$0`; `--check` reports only, default
+  writes the artifact; idempotent, warns if the aggregate ever changes).
+- **Why:** the test set is the measurement anchor — reshuffling or editing it would make the
+  Phase-4 numbers non-comparable and risk hiding leakage. CORD's test split is already internally
+  clean (**100 unique inputs, 0 duplicates, 0 empty**), so freezing it verbatim is honest and the
+  hash manifest makes the anchor immutable and auditable. Leakage is a *training-set* problem, so it
+  is removed from train/val, keeping the test records untouched.
+- **Consequence:** `data/splits/test.jsonl` = **100** records; `test.manifest.json` = **100** unique
+  input hashes, aggregate `872bec26…`, `schema_version=receipt-v1`. **Leakage found: 9 distinct test
+  inputs also appear in train/val** (8 in train, 2 in dev — one test input is in both). The check
+  also surfaced **32** intra-train + **1** intra-dev duplicate inputs and **12** train∩dev overlaps —
+  all deferred to Phase-2 train/val dedup, not acted on now. `run_teacher.py` already refuses
+  `*test*.jsonl` without `--allow-test`; the split is not read again until Phase 4. `data/` is
+  gitignored, so the artifact rebuilds deterministically via `scripts/freeze_test_set.py`; the code
+  (`input_hash` + the script + 2 tests) is committed. Raw CORD verified unchanged (2004 files, tree
+  sha256 `433be82…`). (Phase 1, 2026-08-22)
+
 ### D-011 — CORD→receipt-v1 converter: real structure is `valid_line`, not `gt_parse`
 - **Context:** With the raw corpus on disk (`data/raw/cord/{train,dev,test}/json/*.json`, 800/100/100),
   the assumption baked into D-010/handoffs — that CORD ships a pre-parsed `gt_parse` dict — is

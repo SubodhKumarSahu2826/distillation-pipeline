@@ -7,6 +7,7 @@ from distill.dataset import (
     CORD_UNSCORED_FIELDS,
     build_gold,
     convert_record,
+    input_hash,
     parse_amount,
 )
 from distill.evaluate import ALL_FIELDS
@@ -98,3 +99,16 @@ def test_build_gold_is_schema_valid_even_with_no_items():
     gold = build_gold({"valid_line": [_entry("total.total_price", "TOTAL 12.000", y=0, x=0)]})
     assert gold["line_items"] == [] and gold["total"] == 12000.0
     Receipt.model_validate(gold)
+
+
+# --- input_hash: leakage-safe input identity -------------------------------------
+
+def test_input_hash_ignores_cosmetic_differences():
+    # Case and whitespace runs are normalized away, so near-identical receipts collide.
+    base = "Coffee Latte 50,000\nTOTAL 50,000"
+    assert input_hash(base) == input_hash("  coffee   latte 50,000\n\ntotal 50,000  ")
+
+
+def test_input_hash_distinguishes_real_content():
+    assert input_hash("Coffee 50,000") != input_hash("Coffee 60,000")
+
